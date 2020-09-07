@@ -16,7 +16,7 @@ Jobs 页面为我们提供了 Spark 应用程序中所有的 Job 摘要及其详
 - Total uptime：Spark 作业目前执行的总时间
 - Scheduling mode：作业调度模式，比如 FIFO
 - Number of jobs per status：Job 的执行情况，Active， Completed， Failed
-![](https://spark.apache.org/docs/3.0.0-preview/img/AllJobsPageDetail1.png)
+<img src="https://spark.apache.org/docs/3.0.0-preview/img/AllJobsPageDetail1.png" width="40%" height="40%">
 
 - Event timeline：按时间顺序展示 executors 和 job 的 事件（及动作，比如 executor 的添加删除，一些算子的触发）
 ![](https://spark.apache.org/docs/3.0.0-preview/img/AllJobsPageDetail2.png)
