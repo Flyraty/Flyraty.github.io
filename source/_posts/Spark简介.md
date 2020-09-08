@@ -134,3 +134,7 @@ Spark Continuous Processing 模块
 Spark Delta Lake 
 
 Spark SQL 对事物的处理，支持 CURD。
+
+
+## 本文参考
+[Spark 简介](https://juejin.im/post/6844903558622494733)

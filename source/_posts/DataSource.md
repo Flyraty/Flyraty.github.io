@@ -329,5 +329,6 @@ object test {
    +- *(1) ScanV2 DefaultSource[url_name#3, score#11] (Filters: [isnotnull(url_name#3), isnotnull(score#11), (url_name#3 = 121119)], Options: [dbtable=newfangdetail,driver=com.mysql.jdbc.Driver,url=*********(redacted),paths=[]])
 ```
 
-
+## 本文参考
+[一文理解 Apache Spark DataSource V2 诞生背景及入门实战](https://zhuanlan.zhihu.com/p/83006243)
 
