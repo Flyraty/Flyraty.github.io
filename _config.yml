@@ -6,16 +6,17 @@ GGG## Docs: https://hexo.io/docs/configuration.html
 title: TimeMachine Notes
 subtitle: ''
 descriptin: '于离别之朝束起约定之花'
-keywords:
+keywords: 大数据,bigdata,Mac,Linux,生活,life
 author: 时光机
 language: zh-Hans
 timezone: Asia/shanghai
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://example.com/child' and root as '/child/'
-url: http://example.com
+url: https://flyraty.github.io
 root: /
-permalink: :year/:month/:day/:title/
+# permalink: :year/:month/:day/:title/
+permalink: :title.html
 permalink_defaults:
 pretty_urls:
   trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
@@ -103,9 +104,10 @@ theme: next
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
-  type: git
-  repo: git@github.com:Flyraty/Flyraty.github.io.git
-  branch: master
+  - type: git
+    repo: git@github.com:Flyraty/Flyraty.github.io.git
+    branch: master
+  - type: baidu_url_submitter
 symbols_count_time:
   symbols: true         # 统计单篇文章字数
   time: true            # 估算单篇文章阅读时间
@@ -137,3 +139,9 @@ feed:
   limit: 20
   hub:
   content:
+
+baidu_url_submit:
+  count: 3 ## 比如3，代表提交最新的三个链接
+  host: https://flyraty.github.io ## 在百度站长平台中注册的域名
+  token: U98JzdtOlWEMfwa3 ## 请注意这是您的秘钥， 请不要发布在公众仓库里!
+  path: baidu_urls.txt ## 文本文档的地址， 新链接会保存在此文本文档里
