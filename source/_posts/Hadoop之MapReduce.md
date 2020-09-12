@@ -1,7 +1,9 @@
 ---
 title: Hadoop 之 MapReduce
-date: 2020-07-06 14:26:10
 tags: Hadoop
+categories: BigData
+abbrlink: f8e3216b
+date: 2020-07-06 14:26:10
 ---
 ### 前言
 接触大数据以来，主要写 Spark SQL 和 HQL 来处理数据。关于 MR，除了公司有些数据导入工具是采用 MR 来写的，顺便了解了下，其他时候都没怎么用过。现在想想，未免有些跳的太快了，Spark ，Hive 中的思想有很多也是借鉴 MR 的。甚至最初始的 Hive 就是 SQL 版的 MR。

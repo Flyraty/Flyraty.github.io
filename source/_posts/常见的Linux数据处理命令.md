@@ -1,7 +1,9 @@
 ---
 title: 常见的Linux数据处理命令
-date: 2020-05-07 14:22:05
 tags: Linux
+categories: Linux
+abbrlink: 265c42ae
+date: 2020-05-07 14:22:05
 ---
 
 ### 背景

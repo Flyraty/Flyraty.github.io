@@ -1,7 +1,9 @@
 ---
 title: DataSource API - Managing Datasets in External Data Sources
-date: 2020-03-23 14:18:17
 tags: Spark
+categories: BigData
+abbrlink: a5a69ed8
+date: 2020-03-23 14:18:17
 ---
 ## 前言
 前面已经讲解了 Spark SQL 程序的入口，使用到的数据结构以及一些定义在上面的简单操作。那么我们工作中该如何将各种数据源中的数据转换成 Spark SQL 可以处理的数据结构进而进行各种计算呢？这就是本篇幅要讲解的 DataSource API（DataSource API 提供了读写各种数据源的 format，你甚至可以自定义 format 来连接外部数据源）。

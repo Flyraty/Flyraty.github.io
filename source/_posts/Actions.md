@@ -1,7 +1,9 @@
 ---
 title: Actions - Trigger real calculations
-date: 2020-03-23 14:19:08
 tags: Spark
+abbrlink: 8ff659de
+categories: BigData
+date: 2020-03-23 14:19:08
 ---
 ### 前言
 你可能已经知道 action 会触发提交 Spark 作业，开始进行真正的计算。那么 action 到底是什么，又是如何触发计算的呢？希望本篇可以带你了解这些东西。

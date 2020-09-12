@@ -1,7 +1,9 @@
 ---
 title: shell终端间传递文件
-date: 2020-08-19 17:19:08
 tags: Linux
+categories: Linux
+abbrlink: bd8af4de
+date: 2020-08-19 17:19:08
 ---
 ### 背景
 碰到有些系统的环境权限认证太复杂，往往套了好几层。现在有本地主机 A，远程主机 B。现在 A 要向 B 上传文件。

@@ -1,7 +1,9 @@
 ---
 title: Mac 上 VmwareFusion配置静态 IP
-date: 2020-06-29 17:45:04
 tags: mac
+categories: 工具
+abbrlink: f7cba8b0
+date: 2020-06-29 17:45:04
 ---
 ### 背景
 由于学习原因，在 mac 上下了 Vmware Fusion 构建虚拟机搭建集群。（emnn，我也想用 docker 呀，奈何水平不大够）。配置静态 IP 的时候，发现和 windows 上的一点也不一样，碰到了一些问题，遂记录下来。

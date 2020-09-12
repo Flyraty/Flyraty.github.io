@@ -1,7 +1,9 @@
 ---
 title: Docker常用命令
-date: 2020-07-29 14:28:05
 tags: Docker
+categories: Docker
+abbrlink: 29dc6fe8
+date: 2020-07-29 14:28:05
 ---
 ### 前言
 本篇用来持续更新记录在使用 Docker 过程中经常遇到的命令以及一些小问题

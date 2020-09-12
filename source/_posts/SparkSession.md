@@ -1,7 +1,9 @@
 ---
 title: SparkSession - The Entry Point to Spark SQL
-date: 2020-03-21 14:17:08
 tags: Spark
+categories: BigData
+abbrlink: f3423d06
+date: 2020-03-21 14:17:08
 ---
 
 ## 前言

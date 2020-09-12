@@ -1,7 +1,9 @@
 ---
 title: SSH配置
-date: 2020-04-10 14:21:19
 tags: Hadoop
+categories: BigData
+abbrlink: 9a4d2557
+date: 2020-04-10 14:21:19
 ---
 ### 什么是 SSH
 ssh 是一种网络协议，用于计算机之间的加密登录。大致流程如下

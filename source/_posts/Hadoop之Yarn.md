@@ -1,7 +1,9 @@
 ---
 title: Hadoop之Yarn
-date: 2020-07-06 14:26:16
 tags: Hadoop
+categories: BigData
+abbrlink: f069b6af
+date: 2020-07-06 14:26:16
 ---
 ### 前言
 YARN 作为最常见的资源调度管理器，它是如何工作的呢？

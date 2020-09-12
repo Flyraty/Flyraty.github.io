@@ -1,7 +1,9 @@
 ---
 title: Spark简介
-date: 2020-03-23 14:17:22
 tags: Spark
+categories: BigData
+abbrlink: aaf17d15
+date: 2020-03-23 14:17:22
 ---
 
 ## 前言

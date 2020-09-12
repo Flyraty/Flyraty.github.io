@@ -1,7 +1,9 @@
 ---
 title: Hadoop安装与基本配置
-date: 2020-04-14 14:20:51
 tags: Hadoop
+categories: BigData
+abbrlink: 2679c08d
+date: 2020-04-14 14:20:51
 ---
 ### Mac 上安装 Hadoop
 - 前提条件

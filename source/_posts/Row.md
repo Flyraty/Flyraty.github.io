@@ -1,7 +1,9 @@
 ---
 title: Row && Column - Compose "Tabular Data Set"
-date: 2020-03-23 14:18:01
 tags: Spark
+categories: BigData
+abbrlink: 5d48686a
+date: 2020-03-23 14:18:01
 ---
 ## 前言
 Dataset ，DataFrame 在我们眼中的直观的呈现形式就是一张表格。那么我们该如何处理一张表格的行列呢？Spark SQL 中的 Row， Column 类型将为我们解答这个问题。

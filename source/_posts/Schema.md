@@ -1,7 +1,9 @@
 ---
 title: Schema - Describe Structure of Data
-date: 2020-03-23 14:18:45
 tags: Spark
+categories: BigData
+abbrlink: '4374198'
+date: 2020-03-23 14:18:45
 ---
 ### 前言
 Schema 描述并规范数据的结构组成。在 Spark SQL 中，你所处理的每个 df， ds 都有自己的 schema。

@@ -1,7 +1,9 @@
 ---
 title: zero_copy
-date: 2020-05-07 14:21:31
 tags: Linux
+categories: Linux
+abbrlink: 4f67b333
+date: 2020-05-07 14:21:31
 ---
 
 ### 基本概念

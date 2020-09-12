@@ -1,7 +1,9 @@
 ---
 title: Aggregate - 普通的聚合计算和基于 window 的聚合计算
-date: 2020-03-26 14:19:54
 tags: Spark
+categories: BigData
+abbrlink: bfb6e21b
+date: 2020-03-26 14:19:54
 ---
 ### 前言
 聚合计算对于数据统计有着重要的作用，比如常见的 Top N 问题。本文主要介绍常见的聚合计算函数以及基于 Window 的处理。

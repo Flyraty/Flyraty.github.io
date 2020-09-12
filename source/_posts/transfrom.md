@@ -1,7 +1,9 @@
 ---
-title: transform - transformations chain
-date: 2020-04-10 14:19:17
+title: "transform -\_transformations chain"
 tags: Spark
+categories: BigData
+abbrlink: '3e030130'
+date: 2020-04-10 14:19:17
 ---
 ### 前言
 transform 是一个灵活的转换算子，接收一个自定义的函数作为参数来处理计算逻辑。它最大的功能是链接多个自定义的转换算子，简化代码，将相似的计算统一起来。本文会通过两个例子来介绍 transform 的功能。

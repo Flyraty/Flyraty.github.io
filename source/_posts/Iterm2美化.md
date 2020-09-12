@@ -1,7 +1,9 @@
 ---
 title: Iterm2 美化
-date: 2020-09-08 11:24:24
 tags: Mac
+categories: 工具
+abbrlink: ec25acc0
+date: 2020-09-08 11:24:24
 ---
 
 ### 前言

@@ -1,7 +1,9 @@
 ---
 title: Build In Functions
-date: 2020-03-23 14:19:36
 tags: Spark
+categories: BigData
+abbrlink: 4ac75a46
+date: 2020-03-23 14:19:36
 ---
 
 ### 前言

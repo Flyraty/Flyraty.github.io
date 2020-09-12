@@ -1,7 +1,9 @@
 ---
 title: Dataset - Structured Query with Data Encoder
-date: 2020-03-23 14:17:37
 tags: Spark
+categories: BigData
+abbrlink: f6ce126b
+date: 2020-03-23 14:17:37
 ---
 
 ## 前言

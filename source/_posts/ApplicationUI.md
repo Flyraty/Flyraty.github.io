@@ -1,7 +1,9 @@
 ---
-title: Application UI - Monitoring and Instrumentation
-date: 2020-05-25 14:23:53
+title: "Application UI -\_Monitoring and Instrumentation"
 tags: Spark
+categories: BigData
+abbrlink: c0388aaa
+date: 2020-05-25 14:23:53
 ---
 
 ### 前言

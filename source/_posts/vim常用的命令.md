@@ -1,7 +1,9 @@
 ---
 title: vim常用的命令
-date: 2020-05-26 14:24:16
 tags: Linux
+categories: 工具
+abbrlink: 15118c2d
+date: 2020-05-26 14:24:16
 ---
 
 #### 背景

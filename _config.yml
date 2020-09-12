@@ -4,7 +4,7 @@ GGG## Docs: https://hexo.io/docs/configuration.html
 
 # Site
 title: TimeMachine Notes
-subtitle: ''
+subtitle: '愿一直发现有趣的事情'
 descriptin: '于离别之朝束起约定之花'
 keywords: 大数据,bigdata,Mac,Linux,生活,life
 author: 时光机
@@ -16,11 +16,14 @@ timezone: Asia/shanghai
 url: https://flyraty.github.io
 root: /
 # permalink: :year/:month/:day/:title/
-permalink: :title.html
+permalink: /abbrlink.html
 permalink_defaults:
 pretty_urls:
   trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
   trailing_html: true # Set to false to remove trailing '.html' from permalinks
+abbrlink:
+    alg: crc32   #算法： crc16(default) and crc32
+    rep: hex
 
 # Directory
 source_dir: source

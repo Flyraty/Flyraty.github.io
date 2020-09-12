@@ -1,7 +1,9 @@
 ---
 title: Hadoop之HDFS
-date: 2020-07-04 14:25:57
 tags: Hadoop
+categories: BigData
+abbrlink: c508bdb8
+date: 2020-07-04 14:25:57
 ---
 ### HDFS
 Hadoop 分布式文件存储系统。用于海量数据的存储，往往是静态数据，适合 OLAP 分析。

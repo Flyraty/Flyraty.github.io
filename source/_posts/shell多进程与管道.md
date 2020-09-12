@@ -1,7 +1,9 @@
 ---
 title: shell多进程与管道
-date: 2020-08-31 14:28:54
 tags: Linux
+categories: Linux
+abbrlink: 25dc2834
+date: 2020-08-31 14:28:54
 ---
 
 ### 前言

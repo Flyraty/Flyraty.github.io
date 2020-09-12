@@ -1,7 +1,9 @@
 ---
 title: Scala实用指南-从Java到Scala
-date: 2020-06-02 14:24:40
 tags: Scala
+categories: Scala
+abbrlink: 1f41a4db
+date: 2020-06-02 14:24:40
 ---
 ### 前言
 接触 Scala 小半年，主要用来写 Spark SQL。不得不感叹这东西的学习曲线，入门简单，深入难，好多姿势不懂什么意思，往往写不出 Scala 的特性。现在基本就是拿来当简洁版的 Java 来用，囿于这种想法，常常觉得为啥别人写的 Scala 这么炫，姿势这么多。但是其实忽略了简洁也正是 Scala 相比 Java 的一个优点。

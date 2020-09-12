@@ -1,7 +1,9 @@
 ---
-title: UDAF - User Defined Aggregate  Functions
-date: 2020-03-31 14:20:05
+title: "UDAF - User Defined Aggregate\_ Functions"
 tags: Spark
+categories: BigData
+abbrlink: fb27551c
+date: 2020-03-31 14:20:05
 ---
 
 ### 前言

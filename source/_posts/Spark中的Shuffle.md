@@ -1,7 +1,9 @@
 ---
 title: Spark Shuffle
-date: 2020-08-31 14:29:14
 tags: Spark
+categories: BigData
+abbrlink: baf74228
+date: 2020-08-31 14:29:14
 ---
 ### 前言
 在学习很多大数据处理框架时，我们都会听到 Shuffle 。那么 Shuffle 到底是什么？为什么需要 Shuffle 的存在呢？

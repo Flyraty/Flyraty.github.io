@@ -1,7 +1,9 @@
 ---
 title: Azkaban工作流的编写
-date: 2020-07-24 14:27:26
 tags: Azkaban
+categories: BigData
+abbrlink: f428d959
+date: 2020-07-24 14:27:26
 ---
 
 

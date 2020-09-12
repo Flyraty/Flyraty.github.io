@@ -1,7 +1,9 @@
 ---
 title: git常用命令
-date: 2020-07-07 17:29:35
 tags: git
+categories: 工具
+abbrlink: 423abe9e
+date: 2020-07-07 17:29:35
 ---
 ### 前言
 这里记录一些常见的 git 操作。

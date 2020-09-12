@@ -1,7 +1,9 @@
 ---
 title: hexo + github pages 打造你自己的博客
-date: 2020-09-07 14:27:36
 tags: hexo
+categories: hexo
+abbrlink: c5404504
+date: 2020-09-07 14:27:36
 ---
 
 ### 前言

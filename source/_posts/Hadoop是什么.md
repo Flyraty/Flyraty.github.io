@@ -1,7 +1,9 @@
 ---
 title: Hadoop是什么
-date: 2020-04-08 14:20:18
 tags: Hadoop
+categories: BigData
+abbrlink: 19243a02
+date: 2020-04-08 14:20:18
 ---
 ### Hadoop
 Hadoop 是海量数据分布式存储和计算框架，脱身于 Google 三大论文。现在我们常说的 Hadoop 往往指的是 Hadoop 生态圈。

@@ -1,7 +1,9 @@
 ---
 title: Mac System Sleep Weak Failure
-date: 2020-08-31 14:29:43
 tags: mac
+categories: 工具
+abbrlink: dbfe9aba
+date: 2020-08-31 14:29:43
 ---
 ### 前言
 最近更新了 mac 系统到 Catalina 10.15.6，然后碰到了一个鬼问题 System sleep weak failure。mac 在睡眠一段时间后，无法唤醒，然后就自动重启。一开始没在意，后来实在受不了每天都重启电脑，然后又重新打开所有应用，怎么办嘞，找办法解决。

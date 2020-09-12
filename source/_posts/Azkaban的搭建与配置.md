@@ -1,7 +1,9 @@
 ---
 title: Azkaban的搭建与配置
-date: 2020-07-09 14:26:39
 tags: Azkaban
+categories: BigData
+abbrlink: 79bc37bf
+date: 2020-07-09 14:26:39
 ---
 ### 前言
 AzKaban 是一个任务流调度器，可以组织作业及工作流之间的依赖关系，使得任务按照我们所想的方式有序执行。并且可以轻便的实现报警监控。本文主要讲解如何以 mutible executor mode 部署 AzKaban，并提交简单的工作流做测试使用。

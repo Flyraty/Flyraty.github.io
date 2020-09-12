@@ -1,7 +1,9 @@
 ---
-title: UDF - User  Defined  Functions
-date: 2020-03-24 14:19:43
+title: "UDF - User\_ Defined\_ Functions"
 tags: Spark
+categories: BigData
+abbrlink: d35f6739
+date: 2020-03-24 14:19:43
 ---
 
 ### 前言
