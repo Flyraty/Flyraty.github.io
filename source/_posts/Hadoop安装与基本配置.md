@@ -7,7 +7,7 @@ date: 2020-04-14 14:20:51
 ---
 ### Mac 上安装 Hadoop
 - 前提条件
-	- [Java 安装](https://flyraty.github.io/2020/05/03/Java%E5%AE%89%E8%A3%85/)
+	- [Java 安装](https://flyraty.github.io/posts/c032fe54/)
 
 - 命令安装
 执行以下命令，hadoop 会被安装到 /usr/local/Cellar/Hadoop/${HADOOP_VERSION}，这样默认安装的是 Hadoop 的最新版本，修改配置可以直接去安装目录下。
@@ -49,7 +49,7 @@ brew instll hadoop
     </property>
 </configuration>
 ```
-3. [配置SSH](https://flyraty.github.io/2020/05/03/%E9%85%8D%E7%BD%AESSH)
+3. [配置SSH](https://flyraty.github.io/posts/4feffbd0/)
 
 4. ${HADOOP_HOME}/etc/hadoop/mapred-site.xml
 ```xml
