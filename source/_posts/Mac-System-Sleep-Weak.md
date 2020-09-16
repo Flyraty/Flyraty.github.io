@@ -1,6 +1,6 @@
 ---
 title: Mac System Sleep Weak Failure
-tags: mac
+tags: Mac
 categories: 工具
 abbrlink: dbfe9aba
 date: 2020-08-31 14:29:43

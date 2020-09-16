@@ -1,6 +1,6 @@
 ---
 title: Mac 上 VmwareFusion配置静态 IP
-tags: mac
+tags: Mac
 categories: 工具
 abbrlink: f7cba8b0
 date: 2020-06-29 17:45:04
