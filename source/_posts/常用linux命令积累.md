@@ -1,8 +1,9 @@
 ---
 title: 常用linux命令积累
-date: 2020-09-18 17:45:54
 categories: Linux
 tags: Linux
+abbrlink: a1fe0a10
+date: 2020-09-18 17:45:54
 ---
 
 #### 前言
