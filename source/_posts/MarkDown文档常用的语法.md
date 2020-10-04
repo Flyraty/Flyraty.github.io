@@ -66,3 +66,13 @@ date: 2020-05-14 17:24:11
 
 <img src="https://spark.apache.org/docs/3.0.0-preview/img/AllJobsPageDetail1.png" width="30%" height="30%">
 
+### 任务列表
+```
+- [] 已完成
+- [x] 未完成
+```
+上述代码实现的效果如下，加 x 代表已经完成
+
+- [] 已完成
+- [x] 未完成
+
