@@ -8,7 +8,7 @@ subtitle: '愿一直遇到有趣的人和事'
 descriptin: '于离别之朝束起约定之花'
 keywords: 大数据,bigdata,Mac,Linux,生活,life
 author: 时光机
-language: zh-Hans
+language: zh-CN
 timezone: Asia/shanghai
 
 # URL
@@ -102,7 +102,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: next
+theme: stun
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

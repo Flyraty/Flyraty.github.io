@@ -1,3 +1,6 @@
 [submodule "themes/next"]
 	path = themes/next
 	url = git@github.com:Flyraty/hexo-theme-next.git
+[submodule "themes/stun"]
+	path = themes/stun
+	url = git@github.com:liuyib/hexo-theme-stun.git

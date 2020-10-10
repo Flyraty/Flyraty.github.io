@@ -12,6 +12,7 @@ date: 2020-09-04 00:15:36
 
 **Languages and Tools:**
 
+||||||||||
 |---|---|--|--|--|--|--|--|--|
 |<img height="20" src="./assets/apachespark.svg" title="Apache Spark">|<img height="20" src="./assets/scala.svg" title="Scala">|<img height="20" src="./assets/java.svg" title="Java">|<img height="20" src="./assets/python.svg" title="Python">|<img height="20" src="./assets/docker.svg" title="Docker">|<img height="20" src="./assets/github.svg" title="Github">|<img height="20" src="./assets/linux.svg" title="Linux">|<img height="20" src="./assets/powershell.svg" title="shell">|<img height="20" src="./assets/apachekafka.svg" title="Apache Kafka">|
 
