@@ -1,5 +1,5 @@
 ---
-title: 程序员效率软件及插件
+title: 一些效率软件及有意思的东西
 categories: 工具
 tags: Mac
 abbrlink: 7a64a955
