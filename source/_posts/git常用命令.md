@@ -38,3 +38,7 @@ git remote remove origin
 git stash
 git stash pop 恢复工作区，可能会产生冲突
 ```
+### 获取远程仓库地址
+```sh
+git remote get-url origin
+```
