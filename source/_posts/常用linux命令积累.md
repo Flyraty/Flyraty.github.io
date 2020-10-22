@@ -20,3 +20,9 @@ awk '{$1="order_data|"$1; print}'  xx.txt  >> xxx.txt
 sed -i '1ievent_name|apid|pegtime|product_name|empno' xxx.txt
 
 ```
+
+##### 对接受同一个参数不同值的shell多次调用
+懒得在写 for 循环处理了
+```
+cat events.ini | while read line; do sh simple_delete.sh $line ; done
+```
