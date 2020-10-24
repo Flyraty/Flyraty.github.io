@@ -8,6 +8,7 @@ type: book
 [循序渐近学Spark](https://book.douban.com/subject/27023175/)
 [循序渐进学Docker](https://book.douban.com/subject/26957408/)
 [说话的魅力](https://book.douban.com/subject/3988256/)
+[Apache Kafka 实战](https://book.douban.com/subject/30221096/)
 
 #### 收藏书籍
 [计算机组成原理](https://book.douban.com/subject/2994636/)

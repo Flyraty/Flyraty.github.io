@@ -1,5 +1,5 @@
 ---
-title: 本机搭建zookeeper与kafka伪集群
+title: Apache Kafka实战-搭建zookeeper与kafka集群
 categories: BigData
 tags: [kafka,zookeeper]
 abbrlink: 5f8acd6f

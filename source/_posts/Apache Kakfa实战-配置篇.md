@@ -1,5 +1,5 @@
 ---
-title: kafka与zookeeper的配置（WIP）
+title: Apache Kakfa实战-配置篇
 categories: BigData
 tags:
   - kafka
