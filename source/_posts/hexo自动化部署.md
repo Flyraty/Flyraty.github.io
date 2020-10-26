@@ -24,13 +24,13 @@ ssh-keygen -t rsa  -C "$(git config user.name)" -f github-deploy-key
 ![](https://tva1.sinaimg.cn/large/0081Kckwgy1gk0pe8e498j321e0t8djp.jpg)
 
 #### 添加 workflow
-编写 workflow，新建的时候会有对应的注释提示你该如何写。
+编写 workflow，新建的时候会有对应的注释提示你该如何写。**需要注意的是 submodule 不会自动下载，需要添加 check submodules 这一步。**
 ```yml
 name: CI
 on:
   push:
     branches:
-      - hexo  # 你的博客源文件分支
+      - hexo
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,11 +40,7 @@ jobs:
         uses: actions/checkout@v1
         with:
           ref: hexo
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v1
-        with:
-          version: ${{ matrix.node_version }}
-      - name: Setup hexo
+      - name: Configration hexo repo
         env:
           ACTION_DEPLOY_KEY: ${{ secrets.HEXO_DEPLOY_PRI }}
         run: |
@@ -53,13 +49,24 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           git config --global user.email "1397554745@qq.com"
-          git config --global user.name "Flyraty"
-          npm install hexo-cli -g
-          npm install
+          git config --global user.name "Flyraty" 
+      - name: Checkout submodules
+        run: |
+          git submodule init
+          git submodule update
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v1
+        with:
+          version: ${{ matrix.node_version }}
+      - name: Setup Hexo
+        run: |
+         npm install hexo-cli -g
+         npm install 
       - name: Hexo deploy
         run: |
           hexo clean
           hexo d
+
 
 ```
 
