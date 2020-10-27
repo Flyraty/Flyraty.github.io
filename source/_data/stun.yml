@@ -298,7 +298,7 @@ author:
     # Optional values: turn | shake
     animation: shake
   # Your favorite motto.
-  motto: Give Me Five
+  motto: 焦而不燥，厚积薄发
 
 # Social links
 # Value before `||` is the target link, value after `||` is the name of FontAwesome icon.
