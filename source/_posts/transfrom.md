@@ -77,6 +77,7 @@ def cusExplodeArray(columns: Seq[String])(df: DataFrame): DataFrame = {
 
 #### 去除过多的 withColumn
 withColumn 用来生成新列或者对现有列做一些改变。假设我们有一个数据集有上百个字段，其中很多字段要求 String → Int。我们肯定是不能写上百个 withColumn 的。这时候就可以通过 transform 来统一处理类似的计算处理逻辑。
+
 ```scala
 def transformInt(columns: Seq[String])(df: DataFrame) = {
     var dfi = df

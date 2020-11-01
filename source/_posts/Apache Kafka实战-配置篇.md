@@ -1,5 +1,5 @@
 ---
-title: Apache Kakfa实战-配置篇
+title: Apache Kafka实战-配置篇
 categories: BigData
 tags:
   - kafka
