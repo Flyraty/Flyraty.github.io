@@ -9,22 +9,22 @@ comments: false
 <div class="gallery-page">
 	<div class="gallery-list">
 		<div class="gallery-column">
-			<div class="gallery-item", >
-				<a href="xiaohei"><img src="https://tva1.sinaimg.cn/large/0081Kckwly1gke510rrqgj30fs0s1gn1.jpg", width="300", height="375">
+			<div class="gallery-item">
+				<a href="xiaohei"><img src="https://tva1.sinaimg.cn/large/0081Kckwly1gke510rrqgj30fs0s1gn1.jpg", width="300", height="290">
 				</a>
 				<p>- 小黑 -</p>
 			</div>
 		</div>
 		<div class="gallery-column">
 			<div class="gallery-item">
-				<a href=""><img src="img/sample.jpg", width="300", height="375">
+				<a href=""><img src="img/sample.jpg", width="300", height="290">
 				</a>
 				<p>- 空白册 -</p>
 			</div>
 		</div>
 		<div class="gallery-column">
 			<div class="gallery-item">
-				<a href=""><img src="img/sample.jpg", width="300", height="375">
+				<a href=""><img src="img/sample.jpg", width="300", height="290">
 				</a>
 				<p>- 空白册 -</p>
 			</div>
