@@ -56,6 +56,7 @@ menu:
   tags: /tags/ || fas fa-tags
   about: /about/ || fas fa-user
   book: /book/ || fas fa-book
+  gallery: /gallery/ || fas fa-image
   # You can add a secondary menu like follow.
   # xxx1: javascript:; || fa(s|r|l|d|b) fa-xxx
 

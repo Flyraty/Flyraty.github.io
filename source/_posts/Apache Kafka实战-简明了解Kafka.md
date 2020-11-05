@@ -1,8 +1,11 @@
 ---
 title: Apache Kafka实战-简明了解Kafka
-date: 2020-11-01 10:54:37
 categories: BigData
-tags: [kafka,zookeeper]
+tags:
+  - kafka
+  - zookeeper
+abbrlink: 694b3529
+date: 2020-11-01 10:54:37
 ---
 
 ### 前言
