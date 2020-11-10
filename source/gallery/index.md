@@ -3,7 +3,7 @@ title: -画廊-
 date: 2018-10-25 04:20:09
 comments: false
 ---
-<center>记录逝去的东西（ps: PC 端内层相册样式有点问题）</center>
+<center>记录逝去的东西</center>
 <center>
 	.+†+.</center>
 <div class="gallery-page">
