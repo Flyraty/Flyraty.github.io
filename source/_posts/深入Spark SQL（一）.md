@@ -10,7 +10,7 @@ tags: Spark
 <!--more-->
 
 #### 整体架构
-类似于大多数的大数据处理框架，宏观上 Spark 也维持着三种角色，客户端，集群管理器，工作节点。
+类似于大多数的大数据处理框架，宏观上 Spark JOB 的提交运行主要和三种角色有关，客户端，集群管理器，工作节点。
 ![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg)
 
 Cluster Manager：在 standalone 模式中即为 Master 主节点，控制整个集群，监控 worker。在 YARN 模式中为资源管理器。
@@ -26,9 +26,34 @@ Spark 应用程序作为独立的进程集运行在集群上，通过 Driver  P
 #### 模块
 一个 Spark SQL Appliaction 是怎么被提交运行的呢，其中主要涉及到哪些模块呢。
 一个 Spark 应用程序运行，首先会经过 BlockManager 和 BroadCastManager 做一些 Hadoop 配置或者变量的广播，然后由 DAGScheduler 将任务转换为 RDD 并组织成 DAG，DAG 还将被划分为不同的 Stage。最后由TaskScheduler 借助 ActorSystem 将任务提交给集群管理器（Cluster Manager）。如果存在 shuffle 过程，其存管理主要会涉及到 ShuffleBlockManager 。集群管理器分配资源，对应的 Worker 节点上启动 Executor 进程运行 task。
+可以通过一个 action 算子的触发去读源码，看这些模块是如何实现的。
 
 #### SQL 执行
 一条 SQL 的执行会经过哪些阶段，其实用过 MySQL 就知道，解析执行计划，分析执行计划，优化执行计划，物理执行计划，代码生成。SQL on Hadoop 其实也是一样的。
+以下是一个典型执行计划的示例
+```scala
+== Parsed Logical Plan ==
+'Filter (('url_name = 121119) && ('score >= 3.6))
++- Project [url_name#3, score#11]
+   +- RelationV2 DefaultSource[created_time#0, created_time_ts#1L, img_url#2, url_name#3, fangyuan#4, type#5, id#6, city#7, tags#8, url#9, name#10, score#11, is_direct_sell#12, project_address#13, alias#14, the_main_unit#15, recently_opened#16, img_links#17, img_srcs#18, detail_url#19, huxing_url#20, dianping_url#21, notes#22, team_buy#23, ... 81 more fields] (Options: [dbtable=newfangdetail,driver=com.mysql.jdbc.Driver,url=*********(redacted),paths=[]])
+
+== Analyzed Logical Plan ==
+url_name: string, score: string
+Filter ((url_name#3 = 121119) && (score#11 >= 3.6))
++- Project [url_name#3, score#11]
+   +- RelationV2 DefaultSource[created_time#0, created_time_ts#1L, img_url#2, url_name#3, fangyuan#4, type#5, id#6, city#7, tags#8, url#9, name#10, score#11, is_direct_sell#12, project_address#13, alias#14, the_main_unit#15, recently_opened#16, img_links#17, img_srcs#18, detail_url#19, huxing_url#20, dianping_url#21, notes#22, team_buy#23, ... 81 more fields] (Options: [dbtable=newfangdetail,driver=com.mysql.jdbc.Driver,url=*********(redacted),paths=[]])
+
+== Optimized Logical Plan ==
+Project [url_name#3, score#11]
++- Filter (((isnotnull(url_name#3) && isnotnull(score#11)) && (url_name#3 = 121119)) && (score#11 >= 3.6))
+   +- RelationV2 DefaultSource[created_time#0, created_time_ts#1L, img_url#2, url_name#3, fangyuan#4, type#5, id#6, city#7, tags#8, url#9, name#10, score#11, is_direct_sell#12, project_address#13, alias#14, the_main_unit#15, recently_opened#16, img_links#17, img_srcs#18, detail_url#19, huxing_url#20, dianping_url#21, notes#22, team_buy#23, ... 81 more fields] (Options: [dbtable=newfangdetail,driver=com.mysql.jdbc.Driver,url=*********(redacted),paths=[]])
+
+== Physical Plan ==
+*(1) Project [url_name#3, score#11]
++- *(1) Filter (score#11 >= 3.6)
+   +- *(1) ScanV2 DefaultSource[url_name#3, score#11] (Filters: [isnotnull(url_name#3), isnotnull(score#11), (url_name#3 = 121119)], Options: [dbtable=newfangdetail,driver=com.mysql.jdbc.Driver,url=*********(redacted),paths=[]])
+
+```
 - 解析执行计划
 Spark SQL Parser 负责解析执行计划到 unresolved plan，这个阶段解析出来的执行计化可能没有数据源来自哪里，字段属性等信息，比如 unsolverelation
 - 分析执行计划
