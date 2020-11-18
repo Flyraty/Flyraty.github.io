@@ -4,9 +4,8 @@ categories: BigData
 tags:
   - kafka
   - zookeeper
-  - WIP
 abbrlink: 694b3529
-date: 2020-11-01 10:54:37
+date: 2020-11-16 10:54:37
 ---
 
 ### 前言
