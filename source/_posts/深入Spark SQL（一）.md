@@ -1,8 +1,9 @@
 ---
 title: 深入 Spark SQL（一）- 层次学习 Spark SQL 的执行
-date: 2020-11-14 11:01:23
 categories: BigData
 tags: Spark
+abbrlink: 7caf1424
+date: 2020-11-14 11:01:23
 ---
 
 #### 前言
