@@ -3,7 +3,7 @@ title: Spark Shuffle
 tags: Spark
 categories: BigData
 abbrlink: baf74228
-date: 2020-11-22 14:29:14
+date: 2020-12-01 14:29:14
 ---
 ### 前言
 在学习很多大数据处理框架时，我们都会听到 Shuffle 。那么 Shuffle 到底是什么？为什么需要 Shuffle 的存在呢？
@@ -82,4 +82,9 @@ shuffle map task 对数据按照 key hash 进行分区，并 spill 到文件。�
 - spark.shuffle.file.buffer - spark write task 溢写到磁盘文件时的内存缓冲区大小
 - spark.reducer.maxSizeInFlight - spark read task 拉取数据时的 buffer 缓冲区大小
 - spark.shuffle.memoryFraction - Executor 内存中，分配给 shuffle read task 进行聚合操作的内存比例，默认是 20%。
+
+
+#### 总结
+很多文章说 Spark 内存计算是相比 MR 来说更快的原因之一，其实看过 shuffle 之后，会发现这个说法是不严谨的。程序只要运行就必须加载到内存中，MR 也是如此。Spark 更快速的原因是基于 DAG 构造了一个数据 pipeline，中间结果会优先放到内存，内存放不下了就会自动下放到磁盘，并且具体到各个算子，其会灵活的使用各种数据结构来优化内存的使用，减少 spill 到磁盘的个数。
+以上只是批处理中的 shuffle，流式 shuffle 又是什么样子的呢，这是一个值得思考学习的问题。 
 
