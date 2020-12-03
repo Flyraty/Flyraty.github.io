@@ -15,6 +15,7 @@ date: 2020-12-03 10:54:37
 - 存储与检索
 - 编码与演化
 - 复制与分区
+<!--more-->
 
 ### Kafka
 Kafka 是一个消息流处理引擎并支持实时流处理。Kafka 将消息以 topic 为单位进行归纳，将向 Kafka topic 发送消息的程序称为 producer，将订阅 topic 消息的程序称为 consumer。Kafka 以集群的方式运行，由一个或者多个服务组成，每个服务被称作 broker。producer 通过网络向 kafka 集群发送消息，consumer 通过 poll 的方式向 kafka 集群订阅消息。
