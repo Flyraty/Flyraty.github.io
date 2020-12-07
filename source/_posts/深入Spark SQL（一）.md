@@ -1,5 +1,5 @@
 ---
-title: 深入 Spark SQL（一）- 层次学习 Spark SQL 的执行
+title: 循序渐进学 Spark
 categories: BigData
 tags: Spark
 abbrlink: 7caf1424
@@ -7,7 +7,7 @@ date: 2020-11-14 11:01:23
 ---
 
 #### 前言
-本文作为深入学习 Spark SQL 的开篇，主要从整体架构，模块，一条 SQL 的执行及 DAG 图逐层下探来简单描述一个 Spark SQL Appliaction 的运行机制，该从哪些方面去学习。
+讲一下我个人是从哪些方面来学习 Spark SQL 的？一句话就是自顶向下，逐步下探。
 <!--more-->
 
 #### 整体架构

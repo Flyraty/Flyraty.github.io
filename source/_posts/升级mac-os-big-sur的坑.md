@@ -1,8 +1,9 @@
 ---
 title: mac os 升级到 big sur的坑
-date: 2020-11-21 18:05:18
 categories: 工具
 tags: Mac
+abbrlink: 9894dc13
+date: 2020-11-21 18:05:18
 ---
 
 #### 前言
