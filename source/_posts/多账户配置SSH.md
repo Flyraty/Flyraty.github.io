@@ -1,8 +1,9 @@
 ---
 title: 多个 git 账户配置 SSH
-date: 2020-12-26 22:01:21
 categories: Linux
 tags: Linux
+abbrlink: 9e62987f
+date: 2020-12-26 22:01:21
 ---
 ### 前言
 个人代码维护在 github，而目前大多数公司代码维护在私有 gitlab。这是两套不同的账户体系，并且一般私有 gitlab 的 commit email 不能更改，git 全局的用户名和邮箱只能有一个。这就导致了如下问题 → 不管配置了几个 SSH pub key，SSH 认证最终走的都是 global 的用户名的认证（比如你全局的用户是 github 的，那么你提交 gitlab 就会报 Permission Denied）。本文主要用来解决此问题。
