@@ -15,8 +15,6 @@ transform 是一个灵活的转换算子，接收一个自定义的函数作为�
 
 ```scala
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
-
 object transform {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().master("local")
