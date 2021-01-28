@@ -77,8 +77,11 @@ insert into tblleadsaccesslog values('test', 'test', 'test', '1', '1', '1', 'tes
 |es.query|	默认读取 es 时的查询 DSL	||
 |es.mapping.names|	hive 与 es 字段之间的对应关系	||
 
-
-
+配置属性都不太熟，尤其是刚使用 ES，还是建议先读一遍配置，不然就踩坑了。最近就踩了一个 case。在重新刷数据的时候，没有设置 `es.write.operation` 导致相同 doc_id 的数据被完全替换掉，而不是更新。这个参数默认是 index。
+- index 新数据会追加，旧数据会直接覆盖
+- create 追加数据，如果数据已经存在，抛出异常
+- update 更新旧数据，如果旧数据不存在，抛出异常
+- upsert 追加新数据，更新旧数据
 
 
 
