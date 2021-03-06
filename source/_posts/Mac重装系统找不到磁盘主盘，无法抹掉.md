@@ -1,8 +1,9 @@
 ---
 title: Mac重装系统找不到磁盘主盘，无法抹掉
-date: 2021-02-15 21:57:08
 categories: 工具
 tags: Mac
+abbrlink: 23b10311
+date: 2021-02-15 21:57:08
 ---
 
 #### 前言

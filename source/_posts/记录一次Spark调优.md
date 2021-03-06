@@ -53,7 +53,7 @@ syncUsersDF.show()
 好了，那现在就跑一把看看，等了快1h左右还没有跑完，去 Spark UI 上看执行 DAG 图如下。
 ![](https://tva1.sinaimg.cn/large/007S8ZIlly1gj1jee8g62j31gl0u0gth.jpg)
 
-可以看到耗时较长的原因有以下两点，其中 BNGL 巨慢，是主要原因
+可以看到耗时较长的原因有以下两点，其中 BNLJ 巨慢，是主要原因
 1. 数据源端，load 一张30w 的表花了1.7min
 2. BNGL 处。这里广播了右表，然后遍历左表进行 nest loop join，每秒钟几百条的速度在处理。
 针对以上两点逐步优化，查看load 表的job，发现只有一个 task 在跑，单线程的，遂想到 jdbc 调参，在加载表的时候加大并发度。

@@ -1,8 +1,9 @@
 ---
 title: Elasticsearch 与 Hive 集成
-date: 2021-01-12 22:11:47
 categories: BigData
 tags: Elasticsearch
+abbrlink: 6614a01c
+date: 2021-01-12 22:11:47
 ---
 ### 前言
 工作上存在将 Hive 上的数据刷到 ES 的场景，首先想到的是自己写程序读取 Hive 上的数据，经过业务逻辑处理在写回到 ES 上，不过请教了下，知道了 ES 本身已经可以和 Hive 集成。只需添加对应的 jar 包，在 hive 上建立与 ES 关联的外部表，即可使用 HQL 查询写入 ES 索引库。具体使用请见[官方文档](https://www.elastic.co/guide/en/elasticsearch/hadoop/current/hive.html) ，本文只举个简单例子及介绍下主要的参数。
