@@ -1,5 +1,5 @@
 ---
-title: "transform -\_transformations chain"
+title: "transform - transformations chain"
 tags: Spark
 categories: BigData
 abbrlink: '3e030130'
@@ -60,20 +60,21 @@ object transform {
 根据 Array[Array[String]] 生成多列。Array[String] 长度为二，以第一个值为列名，第二个值为列值。
 
 ```scala
-def cusExplodeArray(columns: Seq[String])(df: DataFrame): DataFrame = {
-    var dfi = df
-    for (i <- 0 until columns.size) {
-      if (i == 0) {
-        dfi = dfi.withColumn(columns(i), col("fill_revenue_list")(i)(0))
-      } else {
-        dfi = dfi.withColumn(columns(i), col("fill_revenue_list")(i))
+  def cusExplodeArray(columns: Seq[String])(df: DataFrame): DataFrame = {
+      var dfi = df
+      for (i <- 0 until columns.size) {
+        if (i == 0) {
+          dfi = dfi.withColumn(columns(i), col("fill_revenue_list")(i)(0))
+        } else {
+          dfi = dfi.withColumn(columns(i), col("fill_revenue_list")(i))
+        }
       }
+      dfi
     }
-    dfi
-  }
 ```  
 
 #### 去除过多的 withColumn
+
 withColumn 用来生成新列或者对现有列做一些改变。假设我们有一个数据集有上百个字段，其中很多字段要求 String → Int。我们肯定是不能写上百个 withColumn 的。这时候就可以通过 transform 来统一处理类似的计算处理逻辑。
 
 ```scala
