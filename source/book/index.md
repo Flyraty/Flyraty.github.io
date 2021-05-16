@@ -15,6 +15,7 @@ type: book
 [Apache Kafka 实战](https://book.douban.com/subject/30221096/)
 [DDIA](https://github.com/Vonng/ddia/blob/master)
 [ES 权威指南]()
+[阿里巴巴大数据之路]()
 
 #### 收藏书籍
 [计算机组成原理](https://book.douban.com/subject/2994636/)
@@ -23,3 +24,4 @@ type: book
 [数学之美](https://book.douban.com/subject/26163454/)
 [浪潮之巅](https://book.douban.com/subject/6709783/)
 [高性能 MySql](https://book.douban.com/subject/23008813/)
+[太空漫游四部曲]()
