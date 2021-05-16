@@ -1,9 +1,9 @@
 ---
-title: Grafana+prometheus监控可视化
+title: Grafana监控可视化
 categories: 运维
 tags:
   - Grafana
-  - prometheus监控可视化
+  - Prometheus
   - WIP
 abbrlink: dc1a86bd
 date: 2021-05-15 21:37:35

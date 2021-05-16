@@ -24,7 +24,7 @@ Homebrew 安装在 /usr/local 下面，其中 Taps 下面是一些核心库，�
 在安装 grafana 的时候碰到的这个问题。`brew update` 也没报错，就是大量的 Warning。根据提示执行了 `brew style --fix`，显示 ruby 环境有点问题。
 后面就是所有 brew 命令报这种错，并且更新包都不成功。
 查看 `brew config `，homebrew-core 版本过低。
-```sh 
+```sh
 HOMEBREW_VERSION: 3.1.7-36-g7c68b17
 ORIGIN: https://github.com/Homebrew/brew
 HEAD: 7c68b1738b3dce2885d0146f327eaaf96b6d0029
@@ -34,7 +34,7 @@ Core tap HEAD: bf34b4a87af8acac55d95f133a8b56a627a28557
 Core tap last commit: 5 months ago
 Core tap branch: master
 HOMEBREW_PREFIX: /usr/local
-HOMEBREW_CASK_OPTS: []
+HOMEBREW_CASK_OPTS: `[]`
 HOMEBREW_DISPLAY: /private/tmp/com.apple.launchd.jiJkB9eSrz/org.macosforge.xquartz:0
 HOMEBREW_MAKE_JOBS: 8
 Homebrew Ruby: 2.6.3 => /System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/bin/ruby
