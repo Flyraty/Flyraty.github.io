@@ -1,8 +1,9 @@
 ---
 title: Mac-Homebrew-常见问题
-date: 2021-05-15 21:01:42
 categories: 工具
 tags: Mac
+abbrlink: c670d00d
+date: 2021-05-15 21:01:42
 ---
 
 ### 前言

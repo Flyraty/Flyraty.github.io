@@ -1,11 +1,12 @@
 ---
 title: Grafana+prometheus监控可视化
-date: 2021-05-15 21:37:35
 categories: 运维
-tags: 
-	- Grafana 
-	- prometheus监控可视化
-	- WIP
+tags:
+  - Grafana
+  - prometheus监控可视化
+  - WIP
+abbrlink: dc1a86bd
+date: 2021-05-15 21:37:35
 ---
 
 #### 前言
