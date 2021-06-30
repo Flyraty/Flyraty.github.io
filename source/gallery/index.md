@@ -24,9 +24,9 @@ comments: false
 		</div>
 		<div class="gallery-column">
 			<div class="gallery-item">
-				<a href=""><img src="img/sample.jpg", width="300", height="290">
+				<a href="food"><img src="https://tva1.sinaimg.cn/large/008i3skNly1gs0o8iramej30u0140n0i.jpg", width="300", height="290">
 				</a>
-				<p>- 空白册 -</p>
+				<p>- 美食 -</p>
 			</div>
 		</div>
 	</div>

@@ -145,7 +145,7 @@ header:
     # In theme directory (source/images): /images/avatar.png
     # In site directory (source/uploads): /uploads/avatar.png
     # You can also use a link of image.
-    url: /assets/wallhaven-832pg2.jpg
+    url: /assets/Grace-惊鸿.png
   # Mask effect of the background image.
   mask:
     enable: false
