@@ -3,28 +3,28 @@ title: -画廊-
 date: 2018-10-25 04:20:09
 comments: false
 ---
-<center>记录逝去的东西</center>
+<center>记录逝去与拥有。ps：图片名称彩蛋，请查看网页源代码。</center>
 <center>
 	.+†+.</center>
 <div class="gallery-page">
 	<div class="gallery-list">
 		<div class="gallery-column">
 			<div class="gallery-item">
-				<a href="xiaohei"><img src="https://tva1.sinaimg.cn/large/0081Kckwly1gke510rrqgj30fs0s1gn1.jpg", width="300", height="290">
+				<a href="xiaohei"><img src="https://tva1.sinaimg.cn/large/0081Kckwly1gke510rrqgj30fs0s1gn1.jpg", width="300", height="240">
 				</a>
 				<p>- 小黑 -</p>
 			</div>
 		</div>
 		<div class="gallery-column">
 			<div class="gallery-item">
-				<a href=""><img src="img/sample.jpg", width="300", height="290">
+				<a href="manghe"><img src="https://tva1.sinaimg.cn/large/008i3skNly1gsdej6xhe5j31400u0jse.jpg", width="300", height="240">
 				</a>
-				<p>- 空白册 -</p>
+				<p>- 盲盒 -</p>
 			</div>
 		</div>
 		<div class="gallery-column">
 			<div class="gallery-item">
-				<a href="food"><img src="https://tva1.sinaimg.cn/large/008i3skNly1gs0o8iramej30u0140n0i.jpg", width="300", height="290">
+				<a href="food"><img src="https://tva1.sinaimg.cn/large/008i3skNly1gsdeehocn0j31400u040y.jpg", width="300", height="240">
 				</a>
 				<p>- 美食 -</p>
 			</div>
