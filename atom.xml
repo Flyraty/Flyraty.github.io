@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>TimeMachine Notes</title>
+  
+  <subtitle>愿一直遇到有趣的人和事</subtitle>
+  <link href="https://timemachine.icu/atom.xml" rel="self"/>
+  
+  <link href="https://timemachine.icu/"/>
+  <updated>2021-07-13T15:07:02.844Z</updated>
+  <id>https://timemachine.icu/</id>
+  
+  <author>
+    <name>时光机</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Prometheus + Grafana 监控 - Kafka</title>
+    <link href="https://timemachine.icu/posts/dc1a86bd/"/>
+    <id>https://timemachine.icu/posts/dc1a86bd/</id>
+    <published>2021-05-15T13:37:35.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;最近工作中越来越感受到监控对于查找问题的重要性，一个完备的链路监控对问题定位和趋势分析提效非常高。比如一条实时数据流，从数据采集到消费到入库各个阶段都有一些可观测性的指标（binlog 采集延迟，kafka-lag，读写 QPS，max-request-size，offset 趋势）。如果 kafka-lag 比较小并且 topic 写 QPS没打太高，但是数据有延迟，这里大概率就是上游采集的问题。&lt;br&gt;这里借用 prometheus 官网的话介绍监控的作用。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;长期趋势分析：通过对监控样本数据的持续收集和统计，对监控指标进行长期趋势分析。例如，通过对磁盘空间增长率的判断，我们可以提前预测在未来什么时间节点上需要对资源进行扩容。&lt;/li&gt;
+&lt;li&gt;对照分析：两个版本的系统运行资源使用情况的差异如何？在不同容量情况下系统的并发和负载变化如何？通过监控能够方便的对系统进行跟踪和比较。&lt;/li&gt;
+&lt;li&gt;告警：当系统出现或者即将出现故障时，监控系统需要迅速反应并通知管理员，从而能够对问题进行快速的处理或者提前预防问题的发生，避免出现对业务的影响。&lt;/li&gt;
+&lt;li&gt;故障分析与定位：当问题发生后，需要对问题进行调查和处理。通过对不同监控监控以及历史数据的分析，能够找到并解决根源问题。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;本系列主要用来记录工作中常见系统的监控实现，指标含义以及如何通过监控定位问题并在相关任务挂掉后如何和给下游业务一个较准确的预估恢复时间。大部分借助开源实现。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="大数据运维" scheme="https://timemachine.icu/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E8%BF%90%E7%BB%B4/"/>
+    
+    
+    <category term="WIP" scheme="https://timemachine.icu/tags/WIP/"/>
+    
+    <category term="Grafana" scheme="https://timemachine.icu/tags/Grafana/"/>
+    
+    <category term="Prometheus" scheme="https://timemachine.icu/tags/Prometheus/"/>
+    
+    <category term="kafka_exporter" scheme="https://timemachine.icu/tags/kafka-exporter/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Mac-Homebrew-常见问题</title>
+    <link href="https://timemachine.icu/posts/c670d00d/"/>
+    <id>https://timemachine.icu/posts/c670d00d/</id>
+    <published>2021-05-15T13:01:42.000Z</published>
+    <updated>2021-07-13T15:07:02.840Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;Homebrew 是 Mac 下方便快捷的包管理器。但是有时候因为其版本迭代等，导致 &lt;code&gt;brew update&lt;/code&gt; 执行后各种依赖报错或者 Warning。emmm，碰到好几次了，并且由于网上解决办法参差不齐，每次解决浪费了大量时间。遂记录下每次的解决方法。建议遇到问题去查看官方 issue&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="工具" scheme="https://timemachine.icu/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="Mac" scheme="https://timemachine.icu/tags/Mac/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Mac重装系统找不到磁盘主盘，无法抹掉</title>
+    <link href="https://timemachine.icu/posts/23b10311/"/>
+    <id>https://timemachine.icu/posts/23b10311/</id>
+    <published>2021-02-15T13:57:08.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;最近打算把自己 Mac 卖掉，重装系统碰到了个问题，搞了一天多才搞定，遂记录下。具体是在线重装系统进入到磁盘工具后，找不到主盘，只有一个不到 3G 的 disk0，无法抹掉主盘上的数据且重装系统的时候也识别不到主盘。和&lt;a href=&quot;https://www.jianshu.com/p/69346847efd0&quot;&gt;这个问题&lt;/a&gt;比较类似，不过解决办法真是扯了，网上都是千篇一律，说不清楚，根本不能解决😑 。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="工具" scheme="https://timemachine.icu/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="Mac" scheme="https://timemachine.icu/tags/Mac/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Elasticsearch 与 Hive 集成</title>
+    <link href="https://timemachine.icu/posts/6614a01c/"/>
+    <id>https://timemachine.icu/posts/6614a01c/</id>
+    <published>2021-01-12T14:11:47.000Z</published>
+    <updated>2021-07-13T15:07:02.840Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;工作上存在将 Hive 上的数据刷到 ES 的场景，首先想到的是自己写程序读取 Hive 上的数据，经过业务逻辑处理在写回到 ES 上，不过请教了下，知道了 ES 本身已经可以和 Hive 集成。只需添加对应的 jar 包，在 hive 上建立与 ES 关联的外部表，即可使用 HQL 查询写入 ES 索引库。具体使用请见&lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/hadoop/current/hive.html&quot;&gt;官方文档&lt;/a&gt; ，本文只举个简单例子及介绍下主要的参数。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Elasticsearch" scheme="https://timemachine.icu/tags/Elasticsearch/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>实时消费 MySQL Binlog</title>
+    <link href="https://timemachine.icu/posts/d5c98b55/"/>
+    <id>https://timemachine.icu/posts/d5c98b55/</id>
+    <published>2021-01-02T06:55:10.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;最近工作中用到的，以前没有搞过 binlog，遂在本地完整的跑遍 demo 看看。整体数据流如下，Canal 接收 MySQL Binlog 到 Kafka。Spark Streaming 消费数据写到 ES。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Spark" scheme="https://timemachine.icu/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2020阴霾之下</title>
+    <link href="https://timemachine.icu/posts/e6a74345/"/>
+    <id>https://timemachine.icu/posts/e6a74345/</id>
+    <published>2020-12-31T10:05:33.000Z</published>
+    <updated>2021-07-13T15:07:02.840Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;2020 经历了太多的事情，很幸运的是我身边有很多朋友，是他们在我落寞的时候给了我鼓励。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="生活" scheme="https://timemachine.icu/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+    <category term="生活" scheme="https://timemachine.icu/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>多个 git 账户配置 SSH</title>
+    <link href="https://timemachine.icu/posts/9e62987f/"/>
+    <id>https://timemachine.icu/posts/9e62987f/</id>
+    <published>2020-12-26T14:01:21.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;个人代码维护在 github，而目前大多数公司代码维护在私有 gitlab。这是两套不同的账户体系，并且一般私有 gitlab 的 commit email 不能更改，git 全局的用户名和邮箱只能有一个。这就导致了如下问题 → 不管配置了几个 SSH pub key，SSH 认证最终走的都是 global 的用户名的认证（比如你全局的用户是 github 的，那么你提交 gitlab 就会报 Permission Denied）。本文主要用来解决此问题。&lt;br&gt;其实多个 SSH 配置的话都是这样搞的，配个路由就好了。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Linux" scheme="https://timemachine.icu/categories/Linux/"/>
+    
+    
+    <category term="Linux" scheme="https://timemachine.icu/tags/Linux/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>常见的SQL优化</title>
+    <link href="https://timemachine.icu/posts/5c09ddf8/"/>
+    <id>https://timemachine.icu/posts/5c09ddf8/</id>
+    <published>2020-12-09T07:48:04.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;关系型数据库中常见的 SQL 优化。挺久前写过的笔记了，应该借鉴了挺多文章，侵删。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="MySQL" scheme="https://timemachine.icu/tags/MySQL/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>TimeRnageJoin（WIP）</title>
+    <link href="https://timemachine.icu/posts/7073e6ec/"/>
+    <id>https://timemachine.icu/posts/7073e6ec/</id>
+    <published>2020-12-08T10:00:41.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+      
+      
+    <summary type="html">
+        &lt;h3 id=&quot;前言&quot;   &gt;
+          &lt;a href=&quot;#前言&quot; class=&quot;heading-link&quot;&gt;&lt;i class=&quot;fas fa-link&quot;&gt;&lt;/i&gt;&lt;/a&gt;前言&lt;/h3&gt;
+      &lt;p&gt;&lt;span class=&quot;exturl&quot;&gt;&lt;</summary>
+      
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Spark" scheme="https://timemachine.icu/tags/Spark/"/>
+    
+    <category term="WIP" scheme="https://timemachine.icu/tags/WIP/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Apache Kafka实战-认识Apache Kafka</title>
+    <link href="https://timemachine.icu/posts/694b3529/"/>
+    <id>https://timemachine.icu/posts/694b3529/</id>
+    <published>2020-12-03T02:54:37.000Z</published>
+    <updated>2021-07-13T15:07:02.840Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;最近读完了 DDIA 前五章，回过头来在看 Apache Kafka 实战，很多东西都是不谋而合的，从中也可以看出来很多分布式处理框架在解决自身消息编码设计，复制分区故障转移的方法思维都是差不多的，只是根据各自主攻的场景选择更合适的解决方案。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;可靠性，可伸缩性，可维护性&lt;/li&gt;
+&lt;li&gt;数据模型与查询语言&lt;/li&gt;
+&lt;li&gt;存储与检索&lt;/li&gt;
+&lt;li&gt;编码与演化&lt;/li&gt;
+&lt;li&gt;复制与分区</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="kafka" scheme="https://timemachine.icu/tags/kafka/"/>
+    
+    <category term="zookeeper" scheme="https://timemachine.icu/tags/zookeeper/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spark Shuffle</title>
+    <link href="https://timemachine.icu/posts/baf74228/"/>
+    <id>https://timemachine.icu/posts/baf74228/</id>
+    <published>2020-12-01T06:29:14.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;在学习很多大数据处理框架时，我们都会听到 Shuffle 。那么 Shuffle 到底是什么？为什么需要 Shuffle 的存在呢？&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Spark" scheme="https://timemachine.icu/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>mac os 升级到 big sur的坑</title>
+    <link href="https://timemachine.icu/posts/9894dc13/"/>
+    <id>https://timemachine.icu/posts/9894dc13/</id>
+    <published>2020-11-21T10:05:18.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;升级到 big sur 后，一些系统命令及软件包找不到了（比如 git，python3..）。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="工具" scheme="https://timemachine.icu/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="Mac" scheme="https://timemachine.icu/tags/Mac/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>每周刷题202011_02_14（WIP）</title>
+    <link href="https://timemachine.icu/posts/baa69a19/"/>
+    <id>https://timemachine.icu/posts/baa69a19/</id>
+    <published>2020-11-14T14:31:43.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;最近做的都点迷糊。。。打算把刷题作为一种习惯，其实也是熟悉各种数据结构的一种方法&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/intersection-of-two-arrays/&quot;&gt;两个数组的交集&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/valid-mountain-array/&quot;&gt;有效的山脉数组&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/insert-interval/&quot;&gt;插入区间&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/word-ladder/&quot;&gt;单词接龙&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/sort-integers-by-the-number-of-1-bits/&quot;&gt;根据数字二进制下 1 的数目排序&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/count-of-range-sum/&quot;&gt;区间和的个数&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock-ii/&quot;&gt;买卖股票的最佳时机 II&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/get-maximum-in-generated-array/&quot;&gt;获取生成数组中的最大值&lt;/a&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="算法" scheme="https://timemachine.icu/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="WIP" scheme="https://timemachine.icu/tags/WIP/"/>
+    
+    <category term="leetcode" scheme="https://timemachine.icu/tags/leetcode/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>循序渐进学 Spark</title>
+    <link href="https://timemachine.icu/posts/7caf1424/"/>
+    <id>https://timemachine.icu/posts/7caf1424/</id>
+    <published>2020-11-14T03:01:23.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;讲一下我个人是从哪些方面来学习 Spark SQL 的？一句话就是自顶向下，逐步下探。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Spark" scheme="https://timemachine.icu/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>数据开发岗社招面经</title>
+    <link href="https://timemachine.icu/posts/df46db3a/"/>
+    <id>https://timemachine.icu/posts/df46db3a/</id>
+    <published>2020-11-11T13:48:11.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;面经&quot;&gt;&lt;a href=&quot;#面经&quot; class=&quot;headerlink&quot; title=&quot;面经&quot;&gt;&lt;/a&gt;面经&lt;/h3&gt;&lt;p&gt;编码能力，清晰的表达，解决问题的方式，学习的方法，总结的能力，个人的潜力，感觉这几点往往是最重要的。这几点是需要在生活与工作中建立习惯来养成的。&lt;br&gt;明确自己感兴趣的行业，去寻找行业中的头部公司作为目标来去了解，去学习。&lt;br&gt;读书拓展思维，二八原理。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="面试" scheme="https://timemachine.icu/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>每周刷题202010_26_1101</title>
+    <link href="https://timemachine.icu/posts/8a77d52a/"/>
+    <id>https://timemachine.icu/posts/8a77d52a/</id>
+    <published>2020-11-01T14:26:48.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;每月从困难题开始到困难题结束。&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/binary-tree-preorder-traversal/&quot;&gt;二叉树的前序遍历&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/unique-number-of-occurrences/&quot;&gt;独一无二的出现次数&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/consecutive-numbers/&quot;&gt;连续出现的数字&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/employees-earning-more-than-their-managers/&quot;&gt;超过经理收入的员工&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/duplicate-emails/&quot;&gt;查找重复的电子邮箱&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/customers-who-never-order/&quot;&gt;从不订购的客户&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/sum-root-to-leaf-numbers/&quot;&gt;求根到叶子节点数字之和&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/department-highest-salary/&quot;&gt;部门工资最高的员工&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/island-perimeter/&quot;&gt;岛屿的周长&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/insert-delete-getrandom-o1-duplicates-allowed/&quot;&gt;O(1) 时间插入、删除和获取随机元素 - 允许重复&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/word-break-ii/&quot;&gt;单词拆分 II&lt;/a&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="算法" scheme="https://timemachine.icu/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="WIP" scheme="https://timemachine.icu/tags/WIP/"/>
+    
+    <category term="leetcode" scheme="https://timemachine.icu/tags/leetcode/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>每周刷题202010_19_25</title>
+    <link href="https://timemachine.icu/posts/94401c28/"/>
+    <id>https://timemachine.icu/posts/94401c28/</id>
+    <published>2020-10-25T15:14:23.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;本周碰到的最多的是处理字符串序列，处理链表，用到的最多的是双指针。目前对于很多边界条件，有点面向测试用例编程的感觉&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/backspace-string-compare/&quot;&gt;比较含退格的字符串&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/reorder-list/&quot;&gt;重排链表&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/&quot;&gt;二叉树的最近公共祖先&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/long-pressed-name/&quot;&gt;长按键入&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/serialize-and-deserialize-binary-tree/&quot;&gt;二叉树的序列化与反序列化&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/combine-two-tables/&quot;&gt;组合两个表&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/second-highest-salary/&quot;&gt;第二高的薪水&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/partition-labels/&quot;&gt;划分字母区间&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/palindrome-linked-list/&quot;&gt;回文链表&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/video-stitching/&quot;&gt;视频拼接&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/nth-highest-salary/&quot;&gt;第N高的薪水&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/rank-scores/&quot;&gt;分数排名&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://leetcode-cn.com/problems/longest-mountain-in-array/&quot;&gt;数组中的最长山脉&lt;/a&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="算法" scheme="https://timemachine.icu/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="leetcode" scheme="https://timemachine.icu/tags/leetcode/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>github actions 实现 hexo 自动化部署</title>
+    <link href="https://timemachine.icu/posts/1eb3f811/"/>
+    <id>https://timemachine.icu/posts/1eb3f811/</id>
+    <published>2020-10-24T12:22:13.000Z</published>
+    <updated>2021-07-13T15:07:02.844Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;使用 github pages 托管个人博客网站，使用双分支来保存博客源文件，使用 git submodule 来管理更新主题文件，使用 github actions 来做持续集成。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="hexo" scheme="https://timemachine.icu/categories/hexo/"/>
+    
+    
+    <category term="hexo" scheme="https://timemachine.icu/tags/hexo/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Apache Kafka实战-配置篇（WIP）</title>
+    <link href="https://timemachine.icu/posts/dd1316da/"/>
+    <id>https://timemachine.icu/posts/dd1316da/</id>
+    <published>2020-10-22T11:54:58.000Z</published>
+    <updated>2021-07-13T15:07:02.840Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;kafka 与 zookeeper 的一些重要配置参数&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="kafka" scheme="https://timemachine.icu/tags/kafka/"/>
+    
+    <category term="zookeeper" scheme="https://timemachine.icu/tags/zookeeper/"/>
+    
+    <category term="WIP" scheme="https://timemachine.icu/tags/WIP/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Apache Kafka实战-搭建zookeeper与kafka集群</title>
+    <link href="https://timemachine.icu/posts/5f8acd6f/"/>
+    <id>https://timemachine.icu/posts/5f8acd6f/</id>
+    <published>2020-10-20T03:42:32.000Z</published>
+    <updated>2021-07-13T15:07:02.840Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;直接 brew 安装的 zookeeper 与 kafka 最新版本。但是搭建 zookeeper 集群的时候，zkServer 一直启动失败。遂记录。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="kafka" scheme="https://timemachine.icu/tags/kafka/"/>
+    
+    <category term="zookeeper" scheme="https://timemachine.icu/tags/zookeeper/"/>
+    
+  </entry>
+  
+</feed>
