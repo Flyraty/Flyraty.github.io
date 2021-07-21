@@ -37,6 +37,9 @@ comments: false
 		<div class="img-column">
 			<a href="https://tva1.sinaimg.cn/large/008i3skNly1gs8qg5d49mj30u0140whn.jpg" target="_Blank" name="红烧嫩豆腐"><img src="https://tva1.sinaimg.cn/large/008i3skNly1gs8qg5d49mj30u0140whn.jpg"></a>
 		</div>
+		<div class="img-column"> 
+			<a href="https://tva1.sinaimg.cn/large/008i3skNly1gs8qeligmpj30u01400vn.jpg" target="_Blank" name="红烧鲳鱼"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/q464t.jpg"></a>
+		</div>
 	</div>
 	<div class="img-list">
 		<div class="img-column">
