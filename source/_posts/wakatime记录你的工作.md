@@ -8,7 +8,7 @@ date: 2020-10-10 14:57:58
 
 ### 前言
 偶然发现了别人的 github profile 多了一个 📊 Weekly development breakdown，用于展示各种语言工具的使用时长。感觉很有意思，遂研究了一下。
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gjk925gh1gj30pd02iq36.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gjk925gh1gj30pd02iq36.jpg)
 <!--more-->
 
 ### wakatime
@@ -23,7 +23,7 @@ on:
 - 你可能会发现 actions 运行完之后，你的 gist 提示 cann`t find any file。这个不用担心，检查下第一步的 plugin 是否安装，静静等待凌晨更新（UTC 凌晨实际上是北京时间早上8点）。
 
 先上下我第一天的统计图
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gjk9i8qthwj31bi0laadd.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gjk9i8qthwj31bi0laadd.jpg)
 
 都搞定之后，可以将统计信息放到你自己 pinned 中
 
@@ -31,7 +31,7 @@ on:
 ### 同名仓库
 
 github 新建一个以你的账户名称命名的仓库会触发彩蛋，意思是该项目的 readme 会显示在 profile 中。其实就是自定义你的 github profile。
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gjk9mmheenj31em0d4wh3.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gjk9mmheenj31em0d4wh3.jpg)
 
 这里参考了 [liuyib](https://github.com/liuyib) 的仓库，通过 github 的 api 展示 github 的统计信息。就像下面这样
 ```sh

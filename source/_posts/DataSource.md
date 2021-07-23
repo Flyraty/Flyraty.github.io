@@ -133,7 +133,7 @@ DataSource API v1 不支持流处理
 DataSource API v1 写操作不支持事务。比如，像 Mysql 中存入数据过程中发生异常，已经存进去的数据不会被清理，破坏数据的一致性。需要引入事务。
 DataSource API v2 应运而生，可以简单看下，v2 基本已经解决了上述的问题，支持自定义分区信息。
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd420l7p8vj305z08cgm1.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd420l7p8vj305z08cgm1.jpg)
 
 这里直接用一个网上 DataSource v2 API 读取 MySQL 数据的例子，来看看如何自定义你的 format，实现你的读写逻辑，谓词下推。
 

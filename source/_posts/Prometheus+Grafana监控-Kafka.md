@@ -32,7 +32,7 @@ brew services start prometheus
 
 #### 使用
 安装完成后，可以打开 `http://localhost:9090/` 查看 Prometheus UI。可以在 Status-Targets 里面找到已经启动抓取的 exporter。
-![](https://tva1.sinaimg.cn/large/008i3skNly1grc1gm1u0qj31h80ltn0f.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1grc1gm1u0qj31h80ltn0f.jpg)
 
 Prometheus 大概的流程如下。更多的信息可以查看官方文档。其中 PromQL 以及 metric 的格式需要重点了解下，以后查询 metrics，配置 Grafana DashBoard 都会用到。
 - Prometheus server 定期从配置的 job 拉取 metrics。
@@ -94,9 +94,9 @@ scrape_configs:
     - targets: ["localhost:11112"]
 ```
 查看 prometheus ui，可以观察到已经启动抓取的 job。
-![](https://tva1.sinaimg.cn/large/008i3skNly1gsof789howj31h80hgtc5.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsof789howj31h80hgtc5.jpg)
 访问上图中的 Endpoint 地址（默认是 http://localhost:9308/metrics），可以查看已经抓取到的指标。
-![](https://tva1.sinaimg.cn/large/008i3skNly1gsofhrydl2j30r30p5gu0.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsofhrydl2j30r30p5gu0.jpg)
 
 #### 指标列表
 参考 [kafka_exporter](https://github.com/danielqsj/kafka_exporter) 的 Readme。

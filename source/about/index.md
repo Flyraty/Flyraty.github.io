@@ -8,7 +8,7 @@ date: 2020-09-04 00:15:36
 ##### 我
 生于河北，学与东北，工于北上。
 提倡者人格 INFJ-A
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gjdilxekkuj31np0u0wm2.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gjdilxekkuj31np0u0wm2.jpg)
 
 ##### github stats
 ![flyraty's github stats](https://github-readme-stats.vercel.app/api?username=flyraty&show_icons=true)

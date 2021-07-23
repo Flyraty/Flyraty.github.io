@@ -12,9 +12,9 @@ date: 2020-07-06 14:26:10
 
 ### MR 中的 shuffle
 shuffle 机制几乎贯穿在所有大数据处理框架中。MR 中的 shuffle 是什么样子的呢？
-![](https://tva1.sinaimg.cn/large/007S8ZIlgy1gh6q17d25wj30yx096myd.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlgy1gh6q17d25wj30yx096myd.jpg)
 
-![](https://tva1.sinaimg.cn/large/007S8ZIlgy1gh6q19vatij30zi0bcq4g.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlgy1gh6q19vatij30zi0bcq4g.jpg)
 
 
 1. InputFormat 组件读取数据，split 逻辑切片（和 block 大小有关），划分出各个 MapTask 处理数据。

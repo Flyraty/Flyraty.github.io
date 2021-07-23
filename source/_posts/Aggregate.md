@@ -23,9 +23,9 @@ KeyValueGroupedDataset 用于 TypedColumn 的聚合计算，其作用的数据�
 
 #### groupBy
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd7rp1yu06j313a0a4mzz.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rp1yu06j313a0a4mzz.jpg)
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd7rptny42j313c0m878r.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rptny42j313c0m878r.jpg)
 
 groupBy 就是返回 key 及 key 对应的数据集，不能保证每组有序。因此如果你想保证分组内有序，可能会用到下面的 Window Agg。使用 groupBy 的代价比较大，是先通过 shuffle 将各个 Key 对应的数据拉到各个对应分区下，再进行聚合计算。注释里建议使用 aggregateByKey 或者 reduceByKey。另外 Dataset groupBy 接收的参数是 String 类型。
 
@@ -79,7 +79,7 @@ res20: Array[(Int, Int)] = Array((1,6), (2,11))
 ```
 
 #### groupByKey
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd7rq7b0l6j30zw0jg0wi.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rq7b0l6j30zw0jg0wi.jpg)
 
 groupByKey 还处在试验阶段，接收一个函数作为参数，返回 KeyValueGroupedDataset。想的是让分组的条件可以更加的灵活，不局限于基于列名的分组。比如基于数组里的第几个元素。与 groupBy 一样，是先 shuffle ，在聚合计算。通过下面的代码，我们可以看到 Dataset + groupByKey 后面跟的计算函数比较少，不支持 sum，avg 等。另外还需要注意这里已经是 TypedColumn。
 
@@ -139,7 +139,7 @@ scala> nums.groupBy("remainder").agg(sum("id").alias("sum"), avg("id").alias("av
 #### Window
 窗口计算，这里的 window 像是有序的分组。window 相比 groupBy 保证了分组有序。emnn，当然了，你也可以自己选择初始化 window 的时候不进行 orderBy。
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd7rqjkae3j314q0es41o.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rqjkae3j314q0es41o.jpg)
 
 window 的源码在 spark.sql  的 expressions.window 中。从源码中可以看到 window 的类型是一个叫 windowSpec 的东西。点进去，可以发现创建一个 windowSpec 所需的东西 → parationBy，orderBy，Frame 边界。 parationBy 和 orderBy 比较容易理解。就是分区和区内排序。下面说要 Window Frame 的一些概念。
 

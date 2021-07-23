@@ -80,7 +80,7 @@ hdfs namenode -format
 start-hdfs.sh
 ```
 3. jps 查看 HDFS 相关的进程是否启动成功。
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gefmo350qjj30lc05874n.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gefmo350qjj30lc05874n.jpg)
 
 
 4. 访问 localhost:50070，启动成功会看到 HDFS 的 web ui，可以查看 HDFS 的状态和基本信息。

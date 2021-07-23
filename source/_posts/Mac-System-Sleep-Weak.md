@@ -16,7 +16,7 @@ date: 2020-08-31 14:29:43
 - [重置 SMC](http://support.apple.com/zh-cn/HT201295)
 最终的解决办法是通过 pmset 重置了 sleep 时间。pmset 用于电源管理相关的设置，在系统偏好设置-节能-电源可以看到其一些设置选项，但是 pmset 更加灵活。
 首先 `pmset -g custom` 看下目前电脑电源相关设置
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1giay085zyhj30s411maeu.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1giay085zyhj30s411maeu.jpg)
 
 正常的话，应该是 sleep ≥ displaysleep ≥ disksleep。我这里 sleep 为 0 代表被禁用了（emmm，好像是我自己在节能里设置里不让电脑自动进入睡眠，设置之前也有 System sleep weak failure）。
 

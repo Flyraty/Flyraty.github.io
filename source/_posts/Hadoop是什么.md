@@ -8,11 +8,11 @@ date: 2020-04-08 14:20:18
 ### Hadoop
 Hadoop 是海量数据分布式存储和计算框架，脱身于 Google 三大论文。现在我们常说的 Hadoop 往往指的是 Hadoop 生态圈。
 <!--more-->
-![](https://tva1.sinaimg.cn/large/00831rSTly1gdnrjl629wj30gj0c9ta9.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gdnrjl629wj30gj0c9ta9.jpg)
 
 ### Hadoop 1.x 与 2.x
 Hadoop 1.x 中的 Map Reduce用于资源调度和分布式计算。Hadoop 2.x 引入了 YARN 用于资源调度，Map Reduce 只用于分布式计算。相当于对解耦合。
-![](https://tva1.sinaimg.cn/large/00831rSTly1gdnrsp6wgej30is0d474q.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gdnrsp6wgej30is0d474q.jpg)
 
 ### HDFS
 HDFS 分布式文件存储系统。其主要组成分为 NameNode， DataNode 和 Secondary NameNode。
@@ -21,7 +21,7 @@ DataNode：数据节点，真正存放数据的节点。
 Secondary NameNode：NameNode 的辅助接点，类似 CheckPoint 的作用。NmaeNode 启动时会生成一个系统快照，启动之后的文件改动信息会记录到日志当中。当重启时，会将上一次的快照和改动日志进行合并生成一个新的系统快照。通过这样来保证每次启动时系统快照都是最新的。但是 NameNode 不能经常重启，改动日志会变的比较大，如果下次重启 NameNode ，改动合并过程也可能导致重启过慢。这时候就需要 Secondary NameNode 了，它会定时查询改动日志，合并 NmaeNode 启动时的快照，在传回 NmaeNode。
 
 ### YARN
-![](https://tva1.sinaimg.cn/large/00831rSTly1gdnsgytadbg30ha0ap74w.gif)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gdnsgytadbg30ha0ap74w.gif)
 
 上面这张图展现了 YARN Appliaction 的调度运行过程。
 

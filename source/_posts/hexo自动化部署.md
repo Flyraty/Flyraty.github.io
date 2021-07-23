@@ -19,9 +19,9 @@ ssh-keygen -t rsa  -C "$(git config user.name)" -f github-deploy-key
 
 #### 添加仓库环境变量
 设置 HEXO_DEPLOY_PUB，value 是上步生成的 github-deploy-key.pub 文件内容。
-![](https://tva1.sinaimg.cn/large/0081Kckwgy1gk0pc9xn3hj31yq0s6aex.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/0081Kckwgy1gk0pc9xn3hj31yq0s6aex.jpg)
 设置 HEXO_DEPLOY_PRI
-![](https://tva1.sinaimg.cn/large/0081Kckwgy1gk0pe8e498j321e0t8djp.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/0081Kckwgy1gk0pe8e498j321e0t8djp.jpg)
 
 #### 添加 workflow
 编写 workflow，新建的时候会有对应的注释提示你该如何写。**需要注意的是 submodule 不会自动下载，需要添加 check submodules 这一步。**

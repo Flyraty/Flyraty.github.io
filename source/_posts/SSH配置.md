@@ -8,7 +8,7 @@ date: 2020-04-10 14:21:19
 ### 什么是 SSH
 ssh 是一种网络协议，用于计算机之间的加密登录。大致流程如下
 <!--more-->
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gefb36prmvj30ll0dm3z7.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gefb36prmvj30ll0dm3z7.jpg)
 ### 配置 ssh
 
 这个应该挺熟悉的了，在使用 github 的时候，为了避免每次提交推送输入密码，我们应该都已经配置过了。在提一下过程，以下是 Mac 的。

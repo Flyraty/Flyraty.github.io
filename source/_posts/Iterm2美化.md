@@ -11,7 +11,7 @@ date: 2020-09-08 11:24:24
 <!--more-->
 
 ### Iterm2 主题配置
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gileqar91oj31d90u0nph.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gileqar91oj31d90u0nph.jpg)
 
 #### oh my zsh
 on my zsh 通过提供开源的配置，只需要简单的修改配置文件就能增添插件，修改样式。安装如下
@@ -49,17 +49,17 @@ source ~/.zshrc
 ZSH_THEME="ys"
 ```
 修改主题配色，这里用的是 [Dracula](https://draculatheme.com/iterm/)，下载对应的主题文件，然后导入到 Iterm2 中。
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gilejtsgcej315x0u0b29.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gilejtsgcej315x0u0b29.jpg)
 
 #### 背景配置
 可以在 profile -> window 中配置终端背景图片，然后自己调节一下终端透明度 Transparency
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gilekuryhuj31fe0t4drb.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gilekuryhuj31fe0t4drb.jpg)
 
 #### status bar
 逼格比较高，在 profile -> session 中启用 status bar 并配置。
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gileoqd2ifj31ek0teq9z.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gileoqd2ifj31ek0teq9z.jpg)
 
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gileork71nj31a90u0ahm.jpg) 
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gileork71nj31a90u0ahm.jpg) 
 
 ### sshpass + proilfe 快速登录远程终端
 sshpass 用于在命令中直接提供服务器密码，而不用通过交互式输入。Iterm2  profile 中可以设置打开窗口时执行的 command。两者结合就可以实现快速登入远程服务器。
@@ -76,10 +76,10 @@ sshpass 的简单使用
 ```
 #### 配置 profile
 在 profile  command 中输入命令即可
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gilf1rwxbkj318g0u0do6.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gilf1rwxbkj318g0u0do6.jpg)
 
 #### 快速连接
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gilgch0xhlj316o0aakbg.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gilgch0xhlj316o0aakbg.jpg)
 
 
 

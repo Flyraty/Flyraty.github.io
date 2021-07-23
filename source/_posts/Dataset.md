@@ -11,7 +11,7 @@ Dataset 是 Spark SQL 中的一种强类型数据结构。用于抽象结构化�
 <!--more-->
 ## Dataset 
 我们知道 Dataset 代表的是数据集，那么 Dataset 的数据结构构成就是数据集合吗？下面这张图为我们展现了是什么构成了 Dataset。Dataset 到底是什么？
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd41bh53dpj30dp0b7aak.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd41bh53dpj30dp0b7aak.jpg)
 Dataset 包含以下三种元素（这在我们程序 debug 的时候也可以看到）
 
 QuerExecution （解析未分析的 LogicalPlan 逻辑计划）

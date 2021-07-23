@@ -59,7 +59,7 @@ insert into tblleadsaccesslog values('test', 'test', 'test', '1', '1', '1', 'tes
 ```
 查询对应的 ES 索引库，可以查询到 batch_name 为 test 的数据。
 
-![](https://tva1.sinaimg.cn/large/008eGmZEly1gml9r54y5dj31ke0u0n51.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008eGmZEly1gml9r54y5dj31ke0u0n51.jpg)
 
 #### ES 相关属性
 更详细的可以直接参考官方文档 [Configuration](https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html)

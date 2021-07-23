@@ -57,7 +57,7 @@ Spark 不适用于内存 hold 不住的场景，虽然在内存不足时，由�
 Spark 不适合高实时统计分析，Spark 2.X 的 Structured Streaming 也在快速发展，Continuous Processing还处在试验阶段。但是其受限于 RDD 以及其他原因，还是无法媲美 Flink  在高实时数据流方面的处理。
 
 ## 架构
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg)
 
 Cluster Manager：在 standalone 模式中即为 Master 主节点，控制整个集群，监控 worker。在 YARN 模式中为资源管理器。
 
@@ -70,7 +70,7 @@ Executor：执行器，某个 Application 运行在 worker node 上的一个进�
 Spark 应用程序作为独立的进程集运行在集群上，通过 Driver  Program 中的 SparkContext 对象来进行调度。一旦连接上 Cluster Manager（YARN，Spark 自带的 Standalone Cluster），Spark 就会在对应的 Worker 上启动 executor 进程用于计算和存储应用程序运行所需要的数据。接着你的应用程序代码会被发送到各个 executor 。SparkContext 会调度生成 task 在 executor 进程中执行。
 
 ## Spark 编程模型
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wn0othhj310e0gqn9d.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wn0othhj310e0gqn9d.jpg)
 
 用户使用 SparkContext 提供的 API（常用的有 textFile、sequenceFile、runJob、stop、等）编写 Driver application 程序。此外 SQLContext、HiveContext 及 StreamingContext 对 SparkContext进行封装，并提供了 SQL、Hive 及流式计算相关的 API。Spark 2.X 提供了更为方便的 SparkSession（DataFrameReader、DataFrameWriter）。
 
@@ -79,14 +79,14 @@ Spark 应用程序作为独立的进程集运行在集群上，通过 Driver  P
 集群管理器（ClusterManager）给任务分配资源，即将具体任务分配到 Worker 上，Worker 创建 Executor 来处理 task 的运行。Standalone、YARN、Mesos、EC2等都可以作为 Spark 的集群管理器。
 
 ## Spark 计算模型
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wn9j0tpj310a0dg10o.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wn9j0tpj310a0dg10o.jpg)
 
 
 Spark 是基于内存迭代计算的框架，底层数据抽象是 RDD，通过算子来对 RDD 进行转换计算，得到目标结果。
 
 ## Spark 运行流程及特点
 ### 运行流程
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wnqk3zoj30g40cc0w6.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wnqk3zoj30g40cc0w6.jpg)
 
 启动 SparkContext
 
@@ -116,18 +116,18 @@ RDD 在 Spark 中运行的大致流程
 
 3.根据 DAG 划分 Stage，上面的基本概念里也简单提到了 stage 的划分。
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wobuz5jj30gh094n22.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wobuz5jj30gh094n22.jpg)
 
 
 基于上面的例子来划分 stage，在遇到 shuffle 依赖时，DAG 会断开依赖关系，前面的操作划分为一个 Stage，后面的继续按照这样来划分。例子中总共涉及到 RDD 的 4 次转换，action 算子collect 不会触发 RDD 的转换生成。所以在这里 groupByKey 操作涉及到 shuffle。由此 shuffle 之前的操作会作为一个 stage 来处理。最终划分的 stage 结果如下
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3woz9wg5j30ex0690uu.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3woz9wg5j30ex0690uu.jpg)
 
 Task Scheduler 会接受各个 stage 阶段划分的 task 并分发到 executor 中运行。一个 stage 阶段 task 的运行必须等待上一个 stage 阶段的 task 全部运行完。因为下一阶段的第一个转换一定是重新组织数据的，所以必须等当前阶段所有结果数据都计算出来了才能继续。
 
 ## Spark 3.X 展望
 
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wq5tungj30u00gy751.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wq5tungj30u00gy751.jpg)
 
 Spark 将支持 Stage 级别的资源控制和调度。目前 Spark 支持对 executor 资源的控制，但是往往一个 spark 作业分为几个 Stage 阶段，每个阶段用到的资源也是不一样的。支持 Stage 细粒度界别的资源控制有助于我们更好的控制集群资源。详情见 SPARK-27495
 

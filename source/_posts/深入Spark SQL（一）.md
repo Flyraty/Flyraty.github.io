@@ -12,7 +12,7 @@ date: 2020-11-14 11:01:23
 
 #### 整体架构
 类似于大多数的大数据处理框架，宏观上 Spark JOB 的提交运行主要和三种角色有关，客户端，集群管理器，工作节点。
-![](https://tva1.sinaimg.cn/large/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg)
 
 Cluster Manager：在 standalone 模式中即为 Master 主节点，控制整个集群，监控 worker。在 YARN 模式中为资源管理器。
 

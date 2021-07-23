@@ -10,7 +10,7 @@ date: 2020-05-07 14:21:31
 #### 用户态与内核态
 机器的资源是固定的，应用程序进程却有很多，如果无节制的使用资源会导致系统崩溃。所以必须要对进程使用何种资源进行限制，由此权限的不同可以分为用户态和内核态。处于内核态中的程序可以说为所欲为。内核态像外管理硬件资源，像内管理操作系统中的进程，内存等资源。用户态和内核态的划分可以表示为
 <!--more-->
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gejzon86ylj30wm0fu74w.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gejzon86ylj30wm0fu74w.jpg)
 
 #### 系统调用
 上面也提到了一个系统的资源是有限的，但是系统中却存在很多很多的进程，进程不可能无限制自由使用这些资源，所有会由操作系统来统一管理。应用程序进程要想使用资源，就必须通过操作系统提供的入口，这个入口及 System Call 系统调用。举个例子，copy 文件就可能会用到 sys_read 系统调用。系统调用是运行于内核态的。
@@ -38,7 +38,7 @@ Direct Memory Access ，直接内存访问，一种常见的内存访问方式�
 
 #### 套接字缓冲区
 数据在 write/send 的时候，不会立即发送数据，而是先放到套接字缓冲区里面。关闭套接字会丢失套接字输入缓冲区中的内容，输出缓冲区中的内容会继续发送
-![](https://tva1.sinaimg.cn/large/007S8ZIlly1gejznqb24ej31830u0tdu.jpg)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/007S8ZIlly1gejznqb24ej31830u0tdu.jpg)
 
 
 ### 一般的 远程文件 copy（从磁盘读取文件的时候是以DMA方式）
