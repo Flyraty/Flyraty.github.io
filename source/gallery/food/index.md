@@ -48,7 +48,19 @@ comments: false
 		<div class="img-column"> 
 			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsdeh6dkijj30u0140q6n.jpg" target="_Blank" name="干煸菜花"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsdeh6dkijj30u0140q6n.jpg"></a>
 		</div>
+		<div class="img-column"> 
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/liangbanqianzhang.jpeg" target="_Blank" name="凉拌千张"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/liangbanqianzhang.jpeg"></a>
+		</div>
 	</div>
+	<div class="img-list">
+		<div class="img-column">
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/paihuanggua.jpeg" target="_Blank" name="拍黄瓜"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/paihuanggua.jpeg"></a>
+		</div>
+		<div class="img-column"> 
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xiaochaoniurou.jpeg" target="_Blank" name="小炒牛肉"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xiaochaoniurou.jpeg"></a>
+		</div>
+	</div>
+
 
 </div>
 <center>.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.</center>
