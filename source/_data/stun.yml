@@ -63,10 +63,9 @@ menu:
 # Secondary menu
 submenu:
   # Add item of secondary menu in here.
-  # xxx1:
-  #   xxx1-1: /xxx1-1/ || fa(s|r|l|d|b) fa-xxx
-  #   xxx1-2: /xxx1-2/ || fa(s|r|l|d|b) fa-xxx
-
+  # about:
+    # about-me: /about-me/ || fas fa-user
+    # about-blog: /about-blog/ || fas fa-user
 menu_settings:
   # Only show by icon.
   icon_only: false

@@ -6,7 +6,7 @@ tags:
   - Prometheus
   - kafka_exporter
 abbrlink: dc1a86bd
-date: 2021-05-15 21:37:35
+date: 2021-08-01 21:37:35
 ---
 
 ### 前言

@@ -10,7 +10,7 @@ YARN 作为最常见的资源调度管理器，它是如何工作的呢？
 <!--more-->
 
 ### YRAN
-在 [Hadoop 是什么]() 中简单提到了 Yarn 的主要组件。
+在 [Hadoop 是什么](https://timemachine.icu/posts/19243a02/) 中简单提到了 Yarn 的主要组件。
 
 - ResourceManager -> 接收处理客户端的请求，资源分配与调度，启动监控 ApplicationMaster，监控 NodeManager。
 - NodeManager -> 单个节点上的资源管理，处理来自 ResourceManager 和 ApplicationMaster 的命令。
