@@ -57,6 +57,7 @@ menu:
   about: /about/ || fas fa-user
   book: /book/ || fas fa-book
   gallery: /gallery/ || fas fa-image
+  notes: https://timemachine.icu/flink_learning_notes || fas fa-sticky-note
   # You can add a secondary menu like follow.
   # xxx1: javascript:; || fa(s|r|l|d|b) fa-xxx
 
@@ -144,7 +145,7 @@ header:
     # In theme directory (source/images): /images/avatar.png
     # In site directory (source/uploads): /uploads/avatar.png
     # You can also use a link of image.
-    url: /assets/Grace-惊鸿.png
+    url: https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/Grace-%E6%83%8A%E9%B8%BF.png
   # Mask effect of the background image.
   mask:
     enable: false
