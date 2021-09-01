@@ -59,6 +59,9 @@ comments: false
 		<div class="img-column"> 
 			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xiaochaoniurou.jpeg" target="_Blank" name="小炒牛肉"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xiaochaoniurou.jpeg"></a>
 		</div>
+		<div class="img-column"> 
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/congbaoniurou.jpeg" target="_Blank" name="葱爆牛肉"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/congbaoniurou.jpeg"></a>
+		</div>
 	</div>
 	<div class="img-list">
 		<div class="img-column">
@@ -66,6 +69,9 @@ comments: false
 		</div>
 		<div class="img-column"> 
 			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/hongshaoangciyu.jpeg" target="_Blank" name="红烧昂刺鱼"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/hongshaoangciyu.jpeg"></a>
+		</div>
+		<div class="img-column"> 
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xiaochaoniurou.jpeg" target="_Blank" name="肉沫烧茄子"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/roumoshaoqiezi.jpeg"></a>
 		</div>
 	</div>
 

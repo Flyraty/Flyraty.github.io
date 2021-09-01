@@ -39,7 +39,7 @@ gitbook init
   * [DataSet API](dataset/README.md)
   * [Table API](table/README.md)
 ```
-4. gitbook-summary 插件支持自动生成目录，安装完成后，执行 `book sum` 即可。
+4. gitbook-summary 插件支持自动生成目录，安装完成后，执行 `book sum` 即可。**注意中方式生成的目录顺序是按照字典序来的**，所以可能会出现问题。
 
 ```sh 
 npm install -g gitbook-summary
@@ -119,7 +119,8 @@ github pages 集成原理和 hexo 是一样的。
 2. 安装 gitbook 和 gitbook-summary。
 3. `book sum` 生成目录文件，`github build` 生成站点资源文件
 4. `cd _book && git push`。
-CI 配置文件如下，这里和 hexo 一样，采用了双分支，站点 `_book` 部署到 main 分支，而 markdown 源文件在 gitbook 分支。不明白的可以参考下 [github actions 实现 hexo 自动化部署](https://timemachine.icu/posts/1eb3f811/)
+CI 配置文件如下，这里和 hexo 一样，采用了双分支，站点 `_book` 部署到 main 分支，而 markdown 源文件在 gitbook 分支。不明白的可以参考下 [github actions 实现 hexo 自动化部署](https://timemachine.icu/posts/1eb3f811/)。
+需要额外注意的是 ${{ secrets.TOKEN }}，就是在个人 repo 设置中生成一个 access token 供 CI 权限访问。
 
 ```yml
  
@@ -150,7 +151,6 @@ jobs:
                 
     - name: Generate _book folder
       run: |
-        book sm
         gitbook build
         cp SUMMARY.md _book
                 
