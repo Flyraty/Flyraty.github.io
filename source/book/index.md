@@ -28,3 +28,11 @@ type: book
 [浪潮之巅](https://book.douban.com/subject/6709783/)
 [高性能 MySql](https://book.douban.com/subject/23008813/)
 [太空漫游四部曲]()
+
+
+#### 古书
+噫吁嚱，不知上古如何波澜壮阔。
+[山海经](https://book.douban.com/subject/34931159/)
+[道德经](https://book.douban.com/subject/1009789/)
+[易经](https://book.douban.com/subject/1317554/)
+
