@@ -73,13 +73,24 @@ comments: false
 		<div class="img-column"> 
 			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xiaochaoniurou.jpeg" target="_Blank" name="肉沫烧茄子"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/roumoshaoqiezi.jpeg"></a>
 		</div>
+		<div class="img-column"> 
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/baizhuohongshuye.jpg" target="_Blank" name="白灼红薯叶"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/baizhuohongshuye.jpg"></a>
+		</div>
 	</div>
 	<div class="img-list">
 		<div class="img-column">
-			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/shaoqiezi.jpg" target="_Blank" name="烧茄子"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/shaoqiezi.jpg"></a>
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/biandousichaorou.jpg" target="_Blank" name="扁豆丝炒肉"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/biandousichaorou.jpg"></a>
 		</div>
 		<div class="img-column"> 
-			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/shaoqiezi.jpg" target="_Blank" name="烧茄子"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/shaoqiezi.jpg"></a>
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/haoyoushengcai.jpg" target="_Blank" name="蚝油生菜"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/haoyoushengcai.jpg"></a>
+		</div>
+	</div>
+	<div class="img-list">
+		<div class="img-column">
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/hongzaojiangtang.jpg" target="_Blank" name="红枣姜汤"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/hongzaojiangtang.jpg"></a>
+		</div>
+		<div class="img-column"> 
+			<a href="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/zuozongtangji.jpg" target="_Blank" name="左宗棠鸡"><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/zuozongtangji.jpg"></a>
 		</div>
 	</div>
 
