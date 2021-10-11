@@ -30,5 +30,28 @@ comments: false
 			</div>
 		</div>
 	</div>
+	<div class="gallery-list">
+		<div class="gallery-column">
+			<div class="gallery-item">
+				<a href="xiaohei"><img src="img/sample.jpg", width="300", height="240">
+				</a>
+				<p>- 家乡 -</p>
+			</div>
+		</div>
+		<div class="gallery-column">
+			<div class="gallery-item">
+				<a href="manghe"><img src="img/sample.jpg", width="300", height="240">
+				</a>
+				<p>- 旅游 -</p>
+			</div>
+		</div>
+		<div class="gallery-column">
+			<div class="gallery-item">
+				<a href="food"><img src="img/sample.jpg", width="300", height="240">
+				</a>
+				<p>- 占位 -</p>
+			</div>
+		</div>
+	</div>
 </div>
 <center>.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.ｏ.+ﾟ♪ﾟ+.</center>
