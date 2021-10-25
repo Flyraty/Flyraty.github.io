@@ -25,6 +25,16 @@ date: 2021-08-19 18:46:45
 "streamException": false
 
 ```
+后续又看了下此问题，因为摄入任务参数中设置了 resetOffsetAutomatically 为 true，屏蔽了底层问题。修改后，报错如下。
+```java
+"timestamp": "2021-10-04T06:40:40.607Z",
+"exceptionClass": "org.apache.druid.java.util.common.ISE",
+"message": "org.apache.druid.indexing.seekablestream.common.StreamException: org.apache.druid.java.util.common.ISE: Previous sequenceNumber [95252478] is no longer available for partition [1]. You can clear the previous sequenceNumber and start reading from a valid message by using the supervisor's reset API.\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.getOffsetFromStorageForPartition(SeekableStreamSupervisor.java:2527)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.generateStartingSequencesForPartitionGroup(SeekableStreamSupervisor.java:2494)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.createNewTasks(SeekableStreamSupervisor.java:2392)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.runInternal(SeekableStreamSupervisor.java:1068)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor$RunNotice.handle(SeekableStreamSupervisor.java:292)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.lambda$tryInit$3(SeekableStreamSupervisor.java:751)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\nCaused by: org.apache.druid.java.util.common.ISE: Previous sequenceNumber [95252478] is no longer available for partition [1]. You can clear the previous sequenceNumber and start reading from a valid message by using the supervisor's reset API.\n\t... 11 more\n",
+"streamException": true
+```
+查看 kafka offset 信息，报错中的 offset 是三天前的，而 topic 只保留 24h 数据，同时查看 overload 日志，发现 not updating metadata 的日志，看起来是 druid_datasource 的元数据没更新导致，查看源码，发现如果是更新失败的话，还会有 `Not updating metadata, compare-and-swap failure` 的错误，但是这里没有。好嘛，一个问题变成两了，因为日志留存问题，需要等下次报错再查了。
+- 为什么今天的摄入任务会试图读取几天前的 offset ?
+- 为什么设置了自动 reset，在重置的时候会一直报错？
 
 #### 实时摄入任务直接切换 source topic 引发的 segment publish failed
 完整错误如下。显示 segemt 发布失败。
