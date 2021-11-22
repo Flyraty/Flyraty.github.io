@@ -1,8 +1,9 @@
 ---
 title: MR Job Counters 分析
-date: 2021-10-21 22:52:55
 categories: BigData
 tags: Hadoop
+abbrlink: d0259ab8
+date: 2021-10-21 22:52:55
 ---
 
 #### 前言
