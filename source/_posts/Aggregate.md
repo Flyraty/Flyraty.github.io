@@ -349,14 +349,15 @@ object window_aggregate {
 
 
   }
+```
 
-
-Multidimensional Analysis
+### Multidimensional Analysis
 多维度分析。根据指定列的排列组合进行 groupBy。
 
-cube / rollup
+#### cube / rollup
 cube，rollup 都用于多维度分析。区别在于 cube 是对传入的列的所有组合来 groupBy，而 rollup 是层次级别的。比如下面的例子，cube 的操作是 (age, city)，(age)， (city)，全表分组。rollup的操作是 (age, city)，(age)，全表分组。
 
+```scala
 val columns = Seq("name", "age", "city", "vip_level", "view_count")
 val users = Seq(
 		("Tom", 10, "北京", 0, 111),
@@ -379,11 +380,13 @@ users
 	.cube("age", "city")
 	.sum("view_count").alias("sum_view")
 	.show()
+```
 
 
-pivot 透视
+#### pivot 透视
 pivot 透视，利用 stack 反透视。关于透视表，请移步维基百科透视表。可以运行下面的例子自己看下。
 
+```scala
 val example = Seq(
       ("北京", 10000, 2015),
       ("北京", 11000, 2016),

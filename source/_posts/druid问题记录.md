@@ -73,6 +73,16 @@ date: 2021-08-19 18:46:45
 - 在配置测试集群时要明确配置含义，尤其是存储相关的配置。
 
 
+#### druid hadoop_index 摄入报错， java.lang.IllegalStateException: JavaScript is disabled？
+0.19.0 之前版本的 bug，在使用 js 解析并且设置 targetPartitionSize 相关分区参数时，启动了 determineHashPartitions job 会触发此错误。可以参考 [PR#9953](https://github.com/apache/druid/pull/9553)。
+
+生产上使用的是 0.16.0 版本，查看代码如下，DetermineHashedPartitionsJob 没有调用该方法 `JobHelper.injectDruidProperties(job.getConfiguration(), config.getAllowedHadoopPrefix());` ，导致 mapreduce.map.java.opts，mapreduce.reduce.java.opts 没有加载上 druid.javascripts 参数，最终整个 job 就会产生 JavaScript is disabled 错误。
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/determinedHashPartiion_run.png)
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/injectDruidProperties.png)
+
+indexGenerator 和 buildDict job 都调用了该方法，所以不会报错。只会在产生 determineHashPartitions job 时报错。
+![](https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/index_generator_run.png)
+
 
 
 
