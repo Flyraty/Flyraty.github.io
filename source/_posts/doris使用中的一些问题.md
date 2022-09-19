@@ -1,10 +1,11 @@
 ---
 title: doris/starrocks 碎碎念
-date: 2022-07-13 11:36:29
 categories: BigData
-tags: 
-	- Doris
-  	- StarRocks 
+tags:
+  - Doris
+  - StarRocks
+abbrlink: 6ccdea5
+date: 2022-07-13 11:36:29
 ---
 
 ### 前言
