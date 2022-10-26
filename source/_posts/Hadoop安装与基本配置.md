@@ -11,6 +11,7 @@ date: 2020-04-14 14:20:51
 
 - 命令安装
 执行以下命令，hadoop 会被安装到 /usr/local/Cellar/Hadoop/${HADOOP_VERSION}，这样默认安装的是 Hadoop 的最新版本，修改配置可以直接去安装目录下。
+<!--more-->
 ```sh
 brew instll hadoop
 ```
