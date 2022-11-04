@@ -2,7 +2,8 @@
 title: Doris 物化视图
 categories: BigData
 tags:
-  - Doris - StarRocks
+  - Doris
+  - StarRocks
 abbrlink: 56052ea3
 date: 2022-11-04 20:32:29
 ---
