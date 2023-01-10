@@ -1,0 +1,595 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言最近 Yarn 队列资源收缩后，部分流量数据的 druid 离线摄入任务执行时间过长，经常由于申请不到 container 导致并发过低或者 reduce task 频繁失败重试，耗时 6~8h 才能完成。由于本身已经是 T+1 数据，离线摄入执行过长对下游使用方造成了很不好的使用体验。本文主要记录如何定位问题及如何解决。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="druid 离线摄入任务优化">
+<meta property="og:url" content="https://timemachine.icu/posts/b0339e9e/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言最近 Yarn 队列资源收缩后，部分流量数据的 druid 离线摄入任务执行时间过长，经常由于申请不到 container 导致并发过低或者 reduce task 频繁失败重试，耗时 6~8h 才能完成。由于本身已经是 T+1 数据，离线摄入执行过长对下游使用方造成了很不好的使用体验。本文主要记录如何定位问题及如何解决。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_3.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_shuffle_fetcher_error.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_gc.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/hadoop_default_params.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_sort_merge.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_task_detail.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_execute_machine.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_execute_result.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_killed_for_map.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_kill_for_container.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/druid_segment_detail.png">
+<meta property="article:published_time" content="2021-10-11T10:32:55.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Druid">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_1.png"><title>druid 离线摄入任务优化 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/b0339e9e/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">druid 离线摄入任务优化</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-10-11</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">3.5k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">21分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>最近 Yarn 队列资源收缩后，部分流量数据的 druid 离线摄入任务执行时间过长，经常由于申请不到 container 导致并发过低或者 reduce task 频繁失败重试，耗时 6~8h 才能完成。由于本身已经是 T+1 数据，离线摄入执行过长对下游使用方造成了很不好的使用体验。本文主要记录如何定位问题及如何解决。</p>
+<a id="more"></a>
+
+        <h3 id="前提问题"   >
+          <a href="#前提问题" class="heading-link"><i class="fas fa-link"></i></a>前提问题</h3>
+      <p>一般碰到性能优化问题，都要对任务的执行情况有一个比较深入的了解，什么阶段发生了什么，哪个阶段耗时最长，任务的执行环境等等信息。这里首先会抛出一些问题，看看我们该如何获取我们想要的信息，包括各阶段的日志查看，任务运行的环境参数。</p>
+<ol>
+<li><p>MR 作业 map 阶段 spill 的次数该怎么查看？<br>主要分为三段日志，开始读文件，此处可以看到集群 mapre 的环形缓冲区大小是 892M，该map 处理的是 119 M 的文件。根据使用的 InputFormat 不同，日志会有差异，这里不一定会打印出文件路径。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_1.png"><br>发生 spill<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_2.png"><br>spill 完成，这里只溢写了一次。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_spill_3.png"></p>
+</li>
+<li><p>MR 作业 reduce 阶段 fetcher 失败重试的日志怎么查看？<br>reduce shuffle log 中查看，fetcher#15 失败了三次，原因是连接存放目标 map 文件的机器超时。也可以查看 job counters 中的 shuffle error group。</p>
+</li>
+</ol>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_shuffle_fetcher_error.png"></p>
+<ol start="3">
+<li><p>GC 日志怎么查看，该怎样定义 GC 频繁？<br>JVM 参数开启。如果发生多次老年代 GC 或者 metaspace GC，则需要注意内存是否给小了。关于 GC 日志如何查看可以参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/klvchen/articles/11841337.html" >此处</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:+PrintGCDetails -XX:+PrintGCDateStamp</span><br></pre></td></tr></table></div></figure>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_gc.png"></p>
+</li>
+<li><p>Hadoop 默认参数在哪里看？<br>这点是极其需要注意的，不要按照官网默认参数来调整，要按照自己集群的默认参数来调整，一开始就改错了，环形缓冲区大小 892M，官网默认大小 100 m，一开始调整成了 500M，本来是想增大结果调小了。<br>查看以往摄入任务的 MR 中的 Job configuration，搜索自己要调整的参数查看即可。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/hadoop_default_params.png"></p>
+</li>
+<li><p>reduce 阶段 sortmerge 日志的含义？<br>merge 拉取到的上游文件交给 reduce 逻辑去处理。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_sort_merge.png"></p>
+</li>
+<li><p>MR 作业 counters 的查看，对于任务分析有什么意义？<br>相关 counters 的含义参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/codeOfLife/p/5521356.html" >此处</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，相当于 MR 执行统计，对理解 MR 执行会有很大帮助，一般出现 shuffle error 的话，会极大影响整个作业的执行效率。</p>
+</li>
+<li><p>为什么被 kill 重试的 reducer 往往是最后才执行，并且一直占用着资源，处于 NEW 状态？</p>
+</li>
+<li><p>为什么 reduce 逻辑处理相同数据量（大小）的数据的时间差异比较大，快的 8min，慢的到 50min？<br> 主要有两点原因</p>
+<ul>
+<li>存在 shuffle error，网络 io 错误造成的 fetcher 超时非常容易引起 map 和 reduce 的循环重试。</li>
+<li>受执行机本身影响，比如下面这几个 reduce task，当时运行的机器上内存和 cpu 消耗都非常大。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_task_detail.png"><br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_execute_machine.png"></li>
+</ul>
+</li>
+</ol>
+
+        <h3 id="任务执行现象"   >
+          <a href="#任务执行现象" class="heading-link"><i class="fas fa-link"></i></a>任务执行现象</h3>
+      <p>明确了上述前提问题，我们就需要去日志中查看分析，总结出来任务的执行现象，即任务由于哪些问题才导致的慢，最后根据总的问题来去优化，而不是想当然。<br>以其中某天数据为例，观察任务执行情况</p>
+
+        <h4 id="处理数据量"   >
+          <a href="#处理数据量" class="heading-link"><i class="fas fa-link"></i></a>处理数据量</h4>
+      <p>读取 cos 上的文件，总共 4000 个文件，总计 355.5 G，平均大小 91 M，block 大小 为 16M，1 副本。使用的是单独的文件存储。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ hadoop fs -<span class="built_in">stat</span> <span class="string">&quot;%o %r&quot;</span> cosn://xxx</span><br><span class="line">16777216 1</span><br><span class="line">hadoop fs -ls cosn://xxx | wc -l</span><br><span class="line">4001</span><br><span class="line">$ hadoop fs -du -h cosn://xxx</span><br><span class="line">355.5 G  355.5 G  cosn://xxx</span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="MR-参数"   >
+          <a href="#MR-参数" class="heading-link"><i class="fas fa-link"></i></a>MR 参数</h4>
+      <figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;mapreduce.job.queuename&quot;</span>: <span class="string">&quot;xxx&quot;</span>,   <span class="comment"># 执行队列</span></span><br><span class="line"><span class="string">&quot;yarn.nodemanager.vmem-check-enabled&quot;</span>: <span class="string">&quot;false&quot;</span>, <span class="comment"># 关闭虚拟内存检查</span></span><br><span class="line"><span class="string">&quot;mapreduce.job.user.classpath.first&quot;</span>: <span class="string">&quot;true&quot;</span>,</span><br><span class="line"><span class="string">&quot;mapreduce.map.memory.mb&quot;</span>: 2048,  <span class="comment"># map 内存</span></span><br><span class="line"><span class="string">&quot;mapreduce.reduce.memory.mb&quot;</span>: 21504, <span class="comment"># reduce 内存</span></span><br><span class="line"><span class="string">&quot;mapreduce.job.classloader&quot;</span>: <span class="string">&quot;true&quot;</span>,</span><br><span class="line"><span class="string">&quot;mapreduce.job.reduce.slowstart.completedmaps&quot;</span>: 1,  <span class="comment"># 所有 map 执行完后在启动 reduce</span></span><br><span class="line"><span class="string">&quot;mapreduce.reduce.java.opts&quot;</span>: <span class="string">&quot;-server -Xms1g -Xmx25g -XX:MaxDirectMemorySize=512g&quot;</span> <span class="comment"># reduce jvm 设置，最大堆内存 25G</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="任务执行情况"   >
+          <a href="#任务执行情况" class="heading-link"><i class="fas fa-link"></i></a>任务执行情况</h4>
+      <ul>
+<li>MR job 启动了  24000个 map，960 个 rercuer。</li>
+<li>map 阶段任务并发 500 左右，基本上 1min 内完成，平均耗时 30s左右，估算时间在 24000/500 *0.5=24min，最终执行了 31min。</li>
+<li>reduce 阶段任务一开始并发 55~70 左右（受执行机空闲 core 数影响），分为三个阶段 copy → sortmerge → recuce，copy 阶段读取 map 为下游生成的 24000 个 map 文件，fetcher 速率受网络 io 和并发参数影响，平均拉取完成时间在 6 min 左右，平均拉取文件大小在 10000 ~ 40000 bytes 之间，即 0.04 M，并发起来后，会偶发拉取超时。查看其中一个 task，merge 结果如下，reduce 总体耗时在 16 min 左右，受拉回的上游文件大小影响。</li>
+<li>2min内完成 reduce占比为 1/6，200 个，上游 map 生成的文件比较小。执行完之后，发现执行时间为 2min，10min，20min，40min, 几个小时 的执行成功的reducer 都占一定比例。在 reduce 阶段被 kill 掉的 task 有 459 个，map task 由于下游 reducer fetche 超时等原因重试 3720 个。<br>任务最重执行结果<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mr_execute_result.png"></li>
+</ul>
+
+        <h4 id="现象总结"   >
+          <a href="#现象总结" class="heading-link"><i class="fas fa-link"></i></a>现象总结</h4>
+      <ol>
+<li>cos 文件 blocksize 16M，启动 map 数过多，map 平均耗时 30s，进而分配资源开销占比比较大。在队列资源比较紧张的时候，并发数上不去，进而导致相同时间段内处理的数据量差异比较大。</li>
+<li>reduce 阶段 task 执行完成时间差异比较大，发现 2min，10min，20min，40min, 1h 内执行成功的reducer 都占一定比例，reducer 处理的数据不均匀。</li>
+<li>reduce 由于 fetcher 拉取超时和 reduce 阶段内存不足等原因失败重试，fetcher 超时会让 reduce 认为上游 map 失败，进而导致上游 map 重试，重试的 map task 优先级比较高，没有资源的情况下会抢占 reduce 资源，进而导致部分 reduce 失败。fetcher 阶段 10个线程并发拉取 35M （24000 个临时文件）数据花费了 4min 左右，fetcher 耗时比较长。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_killed_for_map.png"></li>
+<li>当天存在异常任务，部分执行机磁盘打满了，导致节点不可用，进而运行在上面的 reduce task 失败。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/reduce_kill_for_container.png"></li>
+<li>reduce sortMerge 后的数据部分存储在内存和磁盘中，在走 reduce 逻辑的时候会有磁盘 io。</li>
+<li>由于 fetcher 超时被 kill 掉的 reducer task 一直占用着 core，但是不执行，任务状态一直为 NEW。</li>
+<li>观察同期执行的 druid 合并任务，只有 140 个 map，查看 jobCounters，shuffle write 的数据量一致，都是 200G 左右，但是 map 读取的字节数差异很大，一个是 237G，一个是 35G，读取压缩文件比读取单纯的文件文件效率要高不少，可以查看 map 整体耗时。</li>
+</ol>
+<p><strong>有时候我们明确了问题，但是不知道内部为啥这样执行，会涉及到哪些参数，数据结构，这时候就需要去了解所使用框架的实现，不管是查看源码还是网上搜索。</strong></p>
+
+        <h3 id="MR-job-的执行过程"   >
+          <a href="#MR-job-的执行过程" class="heading-link"><i class="fas fa-link"></i></a>MR job 的执行过程</h3>
+      <p>可以参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://imgedu.lagou.com/1537079-20181115113345165-1376342754.jpg" >此图</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，比较详细。</p>
+<p>总结一下，大致就是 split→ map → 环形缓冲区 → spill 文件 → sortMerge → reduce fetch → sortMerge → spill → reduce，其中是否发生 spill 主要受 shuffle write，sortMerge 阶段 buffer 的大小。</p>
+<p>对于 druid 离线摄入任务来说，在集群 cpu，内存等资源都充足的情况下，需要关注 map 个数以及  shuffle 阶段，这里的 reduce 的逻辑可以暂时忽略（受 druid 本身影响）。</p>
+
+        <h3 id="Druid-离线摄入任务的执行过程"   >
+          <a href="#Druid-离线摄入任务的执行过程" class="heading-link"><i class="fas fa-link"></i></a>Druid 离线摄入任务的执行过程</h3>
+      <p>本质上是 json2MR 的过程。根据设置的参数判断是否启动不同阶段的 MR。主要有三类 MR job。</p>
+<ol>
+<li><p>determine_partitions_hashed job，设置了 targetPartitionSize 后，首先会启动该 MR job，用于确认分区，计算分区的逻辑在 DetermineHashedPartitionsJob 类，逻辑可以参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.51cto.com/u_10120275/3530686" >https://blog.51cto.com/u_10120275/3530686</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 。就是利用 HLL 估算给定的查询粒度范围内的数据基数，在除以  targetPartitionSize 计算该时间范围内逻辑分片数。比如1小时内数据量 1000w，targetPartitionSize=200w，最终的分片数就是 5 。通过查看摄入任务的日志，可以看到每个时间段内确认的分区结果。需要注意 targetPartitionSize 并不是绝对的，一般还会由 maxPartitionSize 来限制，默认是 50%的targetPartitionSize。最终每个 segment 的行数范围是 targetPartitionSize ~ maxPartitionSize。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/druid_segment_detail.png"></p>
+<p> 引入 targetPartitionSize 需要考虑几个问题。</p>
+<ul>
+<li>需要估算 segemt 的大小和数量，避免又引起查询性能问题。</li>
+<li>启动的 reducer 个数会随着数据量浮动，有可能更少，也有可能更多。少了会导致每个 reducer 处理的数据量比较大，加大内存消耗，会拉长整个 MR 的执行时间。</li>
+<li>整个摄入任务又多了一个 MR，如果均匀分区的执行效率没有太大提升，有点得不偿失。</li>
+</ul>
+</li>
+<li><p>build-dict job，如果存在 uv 类指标，则会启动该 MR，reducer 的个数在代码中被写死，等于精确 uv 类指标的个数。</p>
+</li>
+<li><p>index-generator，主要是 segment 的构建逻辑，可以参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1618957%E3%80%82" >https://cloud.tencent.com/developer/article/1618957。</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</li>
+</ol>
+<p>除了上述 MR 过程外，摄入任务首先会注册 lifecycle，逐个执行生命周期内的所有逻辑，包括 lookup 等，这部分执行时间一般为几min。比如加载 lookup 到执行机 cache，执行 69 个 lookup 的时间在 1min 内，后续 MR 会从 cache 中读取。</p>
+
+        <h3 id="参数调整"   >
+          <a href="#参数调整" class="heading-link"><i class="fas fa-link"></i></a>参数调整</h3>
+      <p>在做参数调整前，需要了解默认参数是啥样子的，这里的默认参数不是参考官方文档，而是看 MR 的 Job Configuration，我们需要了解我们的 hadoop 集群的配置。<br>结合任务执行现象和 Druid 任务执行过程。修改如下参数，目的是单个 map 控制在 5min 内，单个 reducer 控制在 15min。</p>
+<ul>
+<li>调整上游依赖表存储为 parquet 格式，并设置合并小文件，最终生成 500 个文件，根据流量波动，平均大小控制在 100 ~ 300M 之间。</li>
+<li>调整 map 数，按照 256M 分片，500 个 map。（split 不能跨文件，所以 splieSize 在小于 256M 的情况下也会只产生一个 map，而不是两个 128M 文件合并成一个 map）。</li>
+<li>调整 shuffle read 并发到 20，超时时间提高到 5 min，拉取同样的大小的文件，20 个线程拉取 500 个文件显然比拉取 24000 个文件执行效率高，并且网络 IO 开销小。</li>
+<li>reduce 阶段拉取到的 map 文件合并后占 jvm最大堆内存的比例由 0 调整到 0.1，大于才会溢写到磁盘。</li>
+<li>numBackgroundPersistThreads 按照官网建议设置为 1</li>
+<li>调整摄入任务 targetPartitionSize=1200000，维持每个 segment 大小在官方建议的 500M~1G 之间，目的是为了 reduce 处理的数据更加均匀，避免数据不均匀引起的长尾任务。</li>
+</ul>
+<p>需要调整的摄入任务参数如下</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&quot;mapreduce.input.fileinputformat.split.minsize&quot;: 128000000</span><br><span class="line">&quot;mapreduce.reduce.shuffle.parallelcopies&quot;: 20</span><br><span class="line">&quot;mapreduce.reduce.input.buffer.percent&quot;: 0.1</span><br><span class="line">&quot;mapreduce.reduce.shuffle.read.timeout&quot;: 300000</span><br><span class="line">&quot;numBackgroundPersistThreads&quot;: 1</span><br><span class="line">&quot;targetPartitionSize&quot;: 1200000</span><br></pre></td></tr></table></div></figure>
+
+
+        <h3 id="测试"   >
+          <a href="#测试" class="heading-link"><i class="fas fa-link"></i></a>测试</h3>
+      <p>测试受集群队列资源的影响比较大，所以可以使用预估时间来评估</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MR 耗时 &#x3D; (map 数量 &#x2F; map 并发数 * map 平均执行时间 + reducer 数量 &#x2F; reducer 并发数 * reducer 平均执行时间 + 预估等待资源及开销时间）</span><br></pre></td></tr></table></div></figure>
+<p>重新测试该天数据，启动了 500 个map，730 个 reducer。在白天队列资源紧张的情况下，三个 MR 总共执行了 74min，相比之前的 420 min 提升了5倍的效率，并且由于存储改成 parquet，存储资源也降低了 5倍。</p>
+<p>因为 yarn 的容量调度基于内存来管理，内存决定着能申请到的 container 的数量，即并发度。在资源有限的情况下，使用更少内存做相同的事情会更高效。通过上面的公式也能看出来，在 reducer 数量不变或者减少的情况并且平均执行时间不变的情况下，增大 reduce 的并发数会提高的 MR 的效率。</p>
+<p>由于设置了 targetPartitionSize，动态分区后，reducer 数量减少了一半，一开始直接调大 reducer memory -&gt; 30G，jvm 最大堆内存设置为 30G。但是最终测试结果如下，可以看到简单的增大内存并不能加快执行效率，反而会由于并发降低拉长整个 MR 的执行时间。到底多少内存正好合适，除了不断测试，观察 jvm GC 情况也可以。</p>
+<ul>
+<li>30G，25G → 50min。</li>
+<li>21G，20G → 45min。</li>
+<li>20G，18G → 56min，存在长尾任务 30min。</li>
+</ul>
+<p>其实根据上述公式也能估算出来任务执行效率，白天执行，map 并发一般在 500 左右（即 yarn 子队列的最小资源保证），reducer 并发在 60 左右。</p>
+<ul>
+<li>修改前 24000 / 500 * 0.5 + 960 / 60 * 16 </li>
+<li>修改后 500 / 500 * 0.5 + 730 / 60 * 16</li>
+</ul>
+
+        <h3 id="结论"   >
+          <a href="#结论" class="heading-link"><i class="fas fa-link"></i></a>结论</h3>
+      <p>从修改参数后三周内摄入任务的执行情况来看。</p>
+<ul>
+<li>在 6~ 9 点间执行情况差异不大，依然维持在 1.5h 左右。</li>
+<li>在资源紧张+流量翻倍的情况下，摄入任务执行由原先的 6h → 2h，有2倍的性能提升，并且是在减少一半资源的情况下。</li>
+</ul>
+<p>具体原因主要是因为减少了 map 数量引发的效应。</p>
+<ul>
+<li>map 阶段时间缩短一倍。</li>
+<li>shuffle read 阶段同样 4min ，修改后可以拉取到 2.4G 的数据，修改前只拉取到几十 m 的数据。</li>
+<li>reducer 数量降低一倍，且内存不变，平均执行时间维持在 15min，长尾任务在 18min 左右。</li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/b0339e9e/">https://timemachine.icu/posts/b0339e9e/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Druid/">Druid</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/d0259ab8/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">MR Job Counters 分析</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/ea82a2ca/"><span class="paginator-prev__text">druid 问题记录</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E6%8F%90%E9%97%AE%E9%A2%98"><span class="toc-number">2.</span> <span class="toc-text">
+          前提问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A1%E6%89%A7%E8%A1%8C%E7%8E%B0%E8%B1%A1"><span class="toc-number">3.</span> <span class="toc-text">
+          任务执行现象</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%84%E7%90%86%E6%95%B0%E6%8D%AE%E9%87%8F"><span class="toc-number">3.1.</span> <span class="toc-text">
+          处理数据量</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MR-%E5%8F%82%E6%95%B0"><span class="toc-number">3.2.</span> <span class="toc-text">
+          MR 参数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A1%E6%89%A7%E8%A1%8C%E6%83%85%E5%86%B5"><span class="toc-number">3.3.</span> <span class="toc-text">
+          任务执行情况</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%8E%B0%E8%B1%A1%E6%80%BB%E7%BB%93"><span class="toc-number">3.4.</span> <span class="toc-text">
+          现象总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MR-job-%E7%9A%84%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">
+          MR job 的执行过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Druid-%E7%A6%BB%E7%BA%BF%E6%91%84%E5%85%A5%E4%BB%BB%E5%8A%A1%E7%9A%84%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">
+          Druid 离线摄入任务的执行过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E8%B0%83%E6%95%B4"><span class="toc-number">6.</span> <span class="toc-text">
+          参数调整</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95"><span class="toc-number">7.</span> <span class="toc-text">
+          测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BB%93%E8%AE%BA"><span class="toc-number">8.</span> <span class="toc-text">
+          结论</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/b0339e9e/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/b0339e9e/';
+        this.page.identifier = 'posts/b0339e9e/';
+        this.page.title = 'druid 离线摄入任务优化';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

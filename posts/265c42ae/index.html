@@ -1,0 +1,788 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="背景读到了一篇文章讲的如何用 linux 命令来实现一些常见的数据处理操作，如排序，去重，聚合等，感觉非常不错。正好最近工作也用到了这些，遂翻译过来，顺便实践一下。原文地址 An Introduction To Data Science On The Linux Command Line">
+<meta property="og:type" content="article">
+<meta property="og:title" content="常见的Linux数据处理命令">
+<meta property="og:url" content="https://timemachine.icu/posts/265c42ae/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="背景读到了一篇文章讲的如何用 linux 命令来实现一些常见的数据处理操作，如排序，去重，聚合等，感觉非常不错。正好最近工作也用到了这些，遂翻译过来，顺便实践一下。原文地址 An Introduction To Data Science On The Linux Command Line">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-05-07T06:22:05.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary"><title>常见的Linux数据处理命令 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/265c42ae/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">常见的Linux数据处理命令</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-05-07</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">3.7k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">26分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="背景"   >
+          <a href="#背景" class="heading-link"><i class="fas fa-link"></i></a>背景</h3>
+      <p>读到了一篇文章讲的如何用 linux 命令来实现一些常见的数据处理操作，如排序，去重，聚合等，感觉非常不错。正好最近工作也用到了这些，遂翻译过来，顺便实践一下。原文地址 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.robertelder.org/data-science-linux-command-line/" >An Introduction To Data Science On The Linux Command Line</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<a id="more"></a>
+
+
+        <h3 id="The-‘-’-Symbol"   >
+          <a href="#The-‘-’-Symbol" class="heading-link"><i class="fas fa-link"></i></a>The ‘|’ Symbol</h3>
+      <p>许多读者可能已经非常熟悉 | 符号，但是有的或许并不明白其中的含义。在这里需要提前说明一下：在下面几个章节中许多命令的输入和输出都是通过 | 管道来连接的，这意味着我们可以链接很多有用的命令来组合成有用的程序，而这些程序可以直接运行在命令行上。</p>
+
+        <h3 id="grep"   >
+          <a href="#grep" class="heading-link"><i class="fas fa-link"></i></a>grep</h3>
+      <p><strong>what’s grep？</strong>grep 是一个用于提取文件中指定匹配文本的工具。我们可以通过很多不同的标志或者选项来选择从文件或者流中匹配指定的文本。grep 通常是一个面向行的工具，这意味着当它匹配到指定文本，包含匹配文本的整行数据就会被输出出来。当然你可以使用 -o 选项只输出匹配到的文本。</p>
+<p><strong>why is grep useful？</strong>grep 非常有用是因为这是一个比较快的从大量文本总找出匹配文本的方法。一些比较常见的例子有：过滤 web 日志文件查看指定网页的访问量；在你的代码包中搜索指定的关键词（grep 往往比编辑器搜索的更快更可靠）；在 Unix 的管道中间过滤前一个命令的输出。</p>
+<p><strong>How does grep relate to data science？</strong> grep 对特定的数据科学任务非常有用，因为它可以很快的从数据集中匹配得到你想要的信息。很有可能你的数据集中存在很多无关的信息，你想要的数据分布在文本的各个行中。如果你能想到一个完美的规则来过滤它们，那么 grep 非常有用。比如，你现在有一个记录销售信息的 csv 文件</p>
+<details>
+    <summary>sales.csv</summary>
+    tem, modelnumber, price, tax <br>
+    Sneakers, MN009, 49.99, 1.11<br>
+    Sneakers, MTG09, 139.99, 4.11<br>
+    Shirt, MN089, 8.99, 1.44<br>
+    Pants, N09, 39.99, 1.11<br>
+    Sneakers, KN09, 49.99, 1.11<br>
+    Shoes, BN009, 449.22, 4.31<br>
+    Sneakers, dN099, 9.99, 1.22<br>
+    Bananas, GG009, 4.99, 1.11<br>
+</details>
+你可以使用这样的一个命令
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep Sneakers sales.csv</span><br></pre></td></tr></table></div></figure>
+这会过滤出包含 Sneakers 文本的销售记录，下面是执行这条命令的结果
+<details>
+    <summary>results.csv</summary>
+    Sneakers, MN009, 49.99, 1.11<br>
+    Sneakers, MTG09, 139.99, 4.11<br>
+    Sneakers, KN09, 49.99, 1.11<br>
+    Sneakers, dN099, 9.99, 1.22<br>
+</details>
+
+<p>你也可以通过正则表达式来寻找符合特定模式的文本，比如下面的这条命令可以用来过滤以 BN 或者 MN 开头且跟着三个数字的 modelnumber</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -o <span class="string">&quot;\(BN\|MN\)\([0-9]\)\&#123;3\&#125;&quot;</span> sales.csv</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="sed"   >
+          <a href="#sed" class="heading-link"><i class="fas fa-link"></i></a>sed</h3>
+      <p><strong>what’s sed？</strong>sed 用于搜索和替换文本。比如，你可以使用下面的命令将该目录下所有文件中的 dog 替换成 cat</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">&#x27;s/dog/cat/g&#x27;</span> *</span><br></pre></td></tr></table></div></figure>
+<p><strong>why is sed useful？</strong> sed 可以使用正则来表达复杂的匹配场景。sed 的正则替换同样支持反向引用，这使得我们可以匹配任意的模式并且只改变匹配文本中的一部分内容。比如下面的命令会从给定的所有文本中搜索到双引号字符文本行并且交换位置，不需要改动匹配行中的其他文本，同时还将 “ 替换成 ()。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&#x27;The &quot;quick brown&quot; fox jumped over the &quot;lazy red&quot; dog.&#x27;</span> | sed -E <span class="string">&#x27;s/&quot;([^&quot;]+)&quot;([^&quot;]+)&quot;([^&quot;]+)&quot;/(\3)\2(\1)/&#x27;</span></span><br></pre></td></tr></table></div></figure>
+<p>下面是执行的结果<br><code>The (lazy red) fox jumped over the (quck brown) dog.</code></p>
+<p><strong>How does sed relate to data science？</strong>sed  可以用来转换数据格式，比如你需要计算销售额，但是很不幸，原数据的数值型数据加上了 ”，这时候你就可以使用 sed 去掉 “ 做最简单的格式转换</p>
+<details>
+    <summary>sales.csv</summary>
+    age,value<br>
+    "33","5943"<br>
+    "32","543"<br>
+    "34","93"<br>
+    "39","5943"<br>
+    "36","9943"<br>
+    "38","8943"<br>
+</details>
+
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | sed -e <span class="string">&#x27;s/&quot;//g&#x27;</span></span><br></pre></td></tr></table></div></figure>
+<p>如果你经常遇到以下场合，你需要将某个数据集传给你的程序去处理，但是文件中的某些字符无法被程序处理，这时候你就可以使用 sed 去格式化你的数据</p>
+
+        <h3 id="awk"   >
+          <a href="#awk" class="heading-link"><i class="fas fa-link"></i></a>awk</h3>
+      <p><strong>What is awk?</strong>  awk 可以用作通用计算，有一些更高级的搜索和替换用法。</p>
+<p><strong>Why is awk Useful?</strong> awk 可以轻松的处理格式化的文本行，就像一些高级编程语言一样。当然像搜索替换我们用 sed 也可以实现，但是 awk 表现的更漂亮。awk 还可以处理行与行之间的操作，比如第一列加和。</p>
+<p><strong>How does awk relate to data science？</strong>现在我们有一个包含温度信息的文件，里面有华氏度和摄氏度，现在我们需要统一成摄氏度</p>
+<details>
+    <summary>temps.csv</summary>
+    temp,unit<br>
+    26.1,C<br>
+    78.1,F<br>
+    23.1,C<br>
+    25.7,C<br>
+    76.3,F<br>
+    77.3,F<br>
+    24.2,C<br>
+    79.3,F<br>
+    27.9,C<br>
+    75.1,F<br>
+    25.9,C<br>
+    79.0,F<br>
+</details>
+你可以用简单的 awk 实现
+
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat temps.txt | awk -F<span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;&#123;if($2==&quot;F&quot;)print (($1-32)*5/9)&quot;,C&quot;;else print $1&quot;,&quot;$2&#125;&#x27;</span></span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="sort"   >
+          <a href="#sort" class="heading-link"><i class="fas fa-link"></i></a>sort</h3>
+      <p><strong>What is sort?</strong> 正如其名，sort 是用来排序的</p>
+<p><strong>Why is sort Useful?</strong> sort本身可能并没有意义，其常用作一些数据的预处理：你想找到销售额最多的销售人员？sort it ! 然后输出第一行。你想得到 top N，sort it ! 然后输出前 n 行。你想根据数值或者字典排序，这些 sort 都帮你实现了。让我们去感受下不同方式的 sort</p>
+<details>
+    <summary>nums.txt</summary>
+    0<br>
+    1<br>
+    1234<br>
+    11<br>
+    ZZZZ<br>
+    1010<br>
+    0123<br>
+    hello world<br>
+    abc123<br>
+    Hello World<br>
+    9<br>
+    zzzz
+</details>    
+默认 sort 的结果，由下面可以看到，排序是按照字典序来的，所以下面的数值排序可能不符合你的期望。
+
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat foo.txt | sort</span><br></pre></td></tr></table></div></figure>
+
+<details>
+    <summary>results</summary>
+    0<br>
+    0123<br>
+    1<br>
+    1010<br>
+    11<br>
+    1234<br>
+    9<br>
+    abc123<br>
+    Hello World<br>
+    hello world<br>
+    ZZZZ<br>
+    zzzz<br>
+</details>
+如果你想使用数值排序，加上 -n 选项就好了
+
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat foo.txt | sort -n</span><br></pre></td></tr></table></div></figure>
+
+<details>
+    <summary>results</summary>
+    0<br>
+    abc123<br>
+    Hello World<br>
+    hello world<br>
+    ZZZZ<br>
+    zzzz<br>
+    1<br>
+    9<br>
+    11<br>
+    0123<br>
+    1010<br>
+    1234<br>
+</details>
+倒序排序，可以使用 -r 
+
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat foo.txt | sort -r</span><br></pre></td></tr></table></div></figure>
+<details>
+    <summary>results</summary>
+    zzzz<br>
+    ZZZZ<br>
+    hello world<br>
+    Hello World<br>
+    abc123<br>
+    9<br>
+    1234<br>
+    11<br>
+    1010<br>
+    1<br>
+    0123<br>
+    0<br>
+</details>
+
+<p><strong>How does sort relate to data science？</strong>像下面提到的 comm，uniq 就需要接收 sort 排序后的输入。sort -R 还允许我们随机排列输入，这对于生成测试用例测试程序非常有帮助。</p>
+
+        <h3 id="comm"   >
+          <a href="#comm" class="heading-link"><i class="fas fa-link"></i></a>comm</h3>
+      <p><strong>What is comm?</strong> comm 可以用来计算文件间的差集，并集，补集。</p>
+<p>**Why is comm Useful? **comm 可以使我们很容易了解到 2 个文件的不同与相同之处。</p>
+<p><strong>How does comm relate to data science？</strong>一个很好的例子就是你现在有 2 个邮箱列表，一个记录了登录的邮箱，signup.txt。一个记录了产生购买行为的邮箱列表，purchase.txt。</p>
+<details>
+    <summary>signup.txt</summary>
+    8_so_late@hotmail.com<br>
+    fred@example.com<br>
+    info@info.info<br>
+    something@somewhere.com<br>
+    ted@example.net<br>
+</details>
+
+<details>
+    <summary>purchase.txt</summary>
+    example@gmail.com<br>
+    fred@example.com<br>
+    mark@facebook.com<br>
+    something@somewhere.com<br>
+</details>
+
+<p>我们现在有3个问题，1）登录并购买的用户有哪些？2）登录没有购买的用户有哪些？3）没有登录就购买的用户有哪些？comm 可以非常容易的解决这些问题，比如下面的命令就可以看到登录并购买的用户</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">comm -12 signups.txt purchases.txt</span><br></pre></td></tr></table></div></figure>
+<p>需要注意的是 comm 处理的文件必须是被排序过的</p>
+
+        <h3 id="uniq"   >
+          <a href="#uniq" class="heading-link"><i class="fas fa-link"></i></a>uniq</h3>
+      <p>**What is uniq?**uniq 会帮你解决唯一性的问题。</p>
+<p><strong>Why is uniq Useful?</strong> 如果你想删除重复数据，uniq 会帮助你。如果你想知道每条数据的重复次数，uniq 会告诉你。uniq 也可以帮你输出重复项，甚至完整性唯一性的检查。</p>
+<p><strong>How does uniq relate to data science？</strong>举个例子，现在你有一个销售数据文件 sales.csv </p>
+<details>
+    <summary>sales.csv</summary>
+    Shoes,19.00<br>
+    Shoes,28.00<br>
+    Pants,77.00<br>
+    Socks,12.00<br>
+    Shirt,22.00<br>
+    Socks,12.00<br>
+    Socks,12.00<br>
+    Boots,82.00<br>
+</details>
+
+<p>现在你想知道我们到底销售了哪几样商品，你可以通过 awk 提取商品名称然后通过管道传递给 uniq </p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | awk -F<span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> | sort | uniq</span><br></pre></td></tr></table></div></figure>
+<p>我们也可以得到每件商品的销售量</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | awk -F<span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> | sort | uniq -c</span><br></pre></td></tr></table></div></figure>
+<p>下面是执行的结果</p>
+<details>
+    <summary>results.csv</summary>
+    1 Boots<br>
+    1 Pants<br>
+    1 Shirt<br>
+    2 Shoes<br>
+    3 Socks<br>
+</details>    
+
+
+        <h3 id="tr"   >
+          <a href="#tr" class="heading-link"><i class="fas fa-link"></i></a>tr</h3>
+      <p><strong>What is tr?</strong> tr 可以用来删除替换一些文件中的字符，如 \n</p>
+<p>**Why is  Ustreful? ** tr 比较有用的一个地方就是替换掉 windows 上产生的回车符等一些乱七八糟的符号。也可以做一些大小写转换。比如下面的例子将 test.txt 中的 a-z 字符集替换成 大写</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">cat test.txt | tr a-z A-Z</span><br><span class="line">``` </span><br><span class="line"></span><br><span class="line">**How does tr relate to data science？**tr 命令并不像上面的命令与数据处理的联系很深，但是对于特殊情况的数据修复和处理还是非常有帮助的。</span><br><span class="line"></span><br><span class="line"><span class="comment">### cat</span></span><br><span class="line">**What is cat?** cat 可以读取一个或者多个文件，并将内容输出到标准输出</span><br><span class="line"></span><br><span class="line">**Why is cat Useful?** cat 对于合并多个文件非常有用，或者你想把文件输出</span><br><span class="line"></span><br><span class="line">**How does cat relate to data science？**cat 在日常的数据处理中非常常见，最常见的例子是你想聚合几个格式相同的文件然后做数据处理。比如你想对目录下的 csv 文件进行聚合去重</span><br><span class="line">```sh</span><br><span class="line">cat *.csv | awk -F<span class="string">&#x27; &#x27;</span> <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> | sort | uniq</span><br></pre></td></tr></table></div></figure>
+<p>你可能经常看到用 cat 读取文件然后交给其他程序去处理</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat test.txt | somecommand</span><br></pre></td></tr></table></div></figure>
+<p>也许有人说 cat 并没有用，这是因为我们可以使用输入重定向</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">somecommand &lt; file.txt</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="head"   >
+          <a href="#head" class="heading-link"><i class="fas fa-link"></i></a>head</h3>
+      <p><strong>What is head?</strong> head 允许你只输出一个文件的前几行数据</p>
+<p><strong>Why is head Useful?</strong> 你只想检查一个大文件的一部分内容，你只想计算前几行数据</p>
+<p><strong>How does head relate to data science？</strong>比如你有以下的商品销售文件 sales.csv</p>
+<details>
+    <summary>sales.csv</summary>
+    Shoes,19.00<br>
+    Shoes,19.00<br>
+    Pants,77.00<br>
+    Pants,77.00<br>
+    Shoes,19.00<br>
+    Shoes,28.00<br>
+    Pants,77.00<br>
+    Boots,22.00<br>
+    Socks,12.00<br>
+    Socks,12.00<br>
+    Socks,12.00<br>
+    Shirt,22.00<br>
+    Socks,12.00<br>
+    Boots,82.00<br>
+    Boots,82.00<br>
+</details>
+
+<p>你想计算 top 3 最受欢迎的商品，可以使用如下命令</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | awk -F <span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;print $1&#x27;</span> | sort | uniq -c | sort -n -r | head -n 3</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="tail"   >
+          <a href="#tail" class="heading-link"><i class="fas fa-link"></i></a>tail</h3>
+      <p><strong>What is tail?</strong> tail 和head 是相反的，tail 输出文件末尾的内容</p>
+<p>**Why is tail Useful? ** tail 和 head 的功能差不多</p>
+<p><strong>How does tail relate to data science？</strong> 你可以使用 tail 去计算上面 head的例子</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | awk -F<span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> | sort | uniq -c | sort -n | tail -n 3</span><br></pre></td></tr></table></div></figure>
+<p>tail 还可以用来指定起始行，最常见的是 csv 的表头，如果我们只关注数据而不需要表头的话，那么可以使用 tail</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | tail -n +2 </span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="wc"   >
+          <a href="#wc" class="heading-link"><i class="fas fa-link"></i></a>wc</h3>
+      <p><strong>What is wc?</strong> wc 用于单词或者行计数</p>
+<p><strong>Why is wc Useful?</strong>  wc 总是能很快解答你的文件有多少行，每行有多少个字符这样的问题。</p>
+<p><strong>How does wc relate to data science？</strong>比如你想快速知道你的邮件列表文件中有多少个邮件，wc 就可以做到</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wc -l email.csv</span><br></pre></td></tr></table></div></figure>
+<p>wc 也可以用来对多个文件进行计数，这时候就可以和下面提到的 find 命令组合。下面这条命令会统计 data 目录下所有 json  文件的行数</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wc -l `find /data -name *.json`</span><br></pre></td></tr></table></div></figure>
+<p>wc 用作字符计数，这里的 -n 是避免换行，换行会导致字符数 + 1</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> -n <span class="string">&quot;Here is some text that you&#x27;ll get a character count for&quot;</span> | wc -c</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="find"   >
+          <a href="#find" class="heading-link"><i class="fas fa-link"></i></a>find</h3>
+      <p><strong>What is find?</strong>  find 用于查找文件，并且可以对查找的文件进行一些处理</p>
+<p><strong>Why is find Useful?</strong> find 可以通过指定不同的选项（文件类型，文件大小，文件权限等）来查找文件，最有用的是 -exec 选项，它使得我们每找到一个文件，就可以立即对该文件进行操作。</p>
+<p><strong>How does find relate to data science？</strong>让我们用 find 来查找并替换文件中的内容，find 和 sed 的结合。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -<span class="built_in">type</span> f -<span class="built_in">exec</span> sed -i <span class="string">&#x27;s/dog/cat/g&#x27;</span> &#123;&#125; \;</span><br></pre></td></tr></table></div></figure>
+<p>find 后面 . 的含义的是当前目录，find 会从当前目录递归查找所有符合条件的文件并做处理，我们也可以通过 find 来删除一些程序生成的临时文件，比如 spark 的 *crc 文件</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -name <span class="string">&#x27;*.crc&#x27;</span> -<span class="built_in">type</span> f -<span class="built_in">exec</span> rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="tsort"   >
+          <a href="#tsort" class="heading-link"><i class="fas fa-link"></i></a>tsort</h3>
+      <p><strong>What is tsort?</strong> tsort 用来拓补排序，有点类似计算数据之间的血缘关系</p>
+<p><strong>Why is tsort Useful?</strong>  这里用一个简单的例子来描述 tsort，既然是计算血缘关系，那么也就是下一个任务的进行依赖于前一个任务的完成。现在我们就有一个这样的文件 ‘task_dependencies.txt’</p>
+<details>
+    <summary>task_dependencies.txt</summary>
+    wall_framing foundation<br>
+    foundation excavation<br>
+    excavation construction_permits<br>
+    dry_wall electrical<br>
+    electrical wall_framing<br>
+    wall_painting crack_filling<br>
+    crack_filling dry_wall<br>
+</details>
+
+<p>上述文件描述了乱序的事物依赖关系，让我们用 tsort 来梳理一下</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat task_dependencies.txt | tsort</span><br></pre></td></tr></table></div></figure>
+<p>tsort 会遍历每一行内容，并假设前面的一个事物是后面的依赖，由此计算排序整体的依赖关系，下面是执行的结果</p>
+<details>
+    <summary>results.txt</summary>
+    wall_painting<br>
+    crack_filling<br>
+    dry_wall<br>
+    electrical<br>
+    wall_framing<br>
+    foundation<br>
+    excavation<br>
+    construction_permits<br>
+</details>    
+
+<p><strong>How does tsort relate to data science？</strong>拓补排序是图论中常见的问题，应用于机器学习，任务调度，项目管理等等。像 Spark，Flink 对任务的调度就用到了拓补排序。</p>
+
+        <h3 id="tee"   >
+          <a href="#tee" class="heading-link"><i class="fas fa-link"></i></a>tee</h3>
+      <p><strong>What is tee?</strong> tee命令同时向指定文件和标准输出打印信息流</p>
+<p>**Why is tee Useful? **如果你想在运行程序的时候，既要记录日志文件，又想观察程序的输出，tee 命令可以帮助你</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash test.sh | tee test.log</span><br></pre></td></tr></table></div></figure>
+<p><strong>How does tee relate to data science？</strong>tee 命令对数据分析可能并没有用处，但是对我们 debug 很有帮助，比如你有一个非常长的数据处理管道，但是并没有得到你想要的结果，到底是哪一步出了问题了，tee 这时候就可以帮助你</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | tail -n +2 | tee after_tail.log | awk -F<span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> | tee after_awk.log | sort | tee after_sort.log | uniq -c | tee after_uniq.log</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="The-‘-gt-’-Symbol"   >
+          <a href="#The-‘-gt-’-Symbol" class="heading-link"><i class="fas fa-link"></i></a>The ‘&gt;’ Symbol</h3>
+      <p>**What is the ‘&gt;’ Symbol?**输出重定向</p>
+<p><strong>Why is the ‘&gt;’ Symbol Useful?</strong> 输出重定向，输出重定向到文件，而不是在打印到屏幕上</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat sales.csv | tail -n +2 | awk -F<span class="string">&#x27;,&#x27;</span> <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> | sort | uniq -c &gt; unique_counts.txt</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="The-‘-lt-’-Symbol"   >
+          <a href="#The-‘-lt-’-Symbol" class="heading-link"><i class="fas fa-link"></i></a>The ‘&lt;’ Symbol</h3>
+      <p><strong>What is the ‘&lt;’ Symbol?</strong> 输入重定向</p>
+<p><strong>Why is the ‘&lt;’ Symbol Useful?</strong> 指定程序的输入</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep Pants &lt; sales.txt</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/265c42ae/">https://timemachine.icu/posts/265c42ae/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Linux/">Linux</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/4092064b/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">MarkDown 文档常用的语法</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/49ba6d75/"><span class="paginator-prev__text">磁盘与内存</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">
+          背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#The-%E2%80%98-%E2%80%99-Symbol"><span class="toc-number">2.</span> <span class="toc-text">
+          The ‘|’ Symbol</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#grep"><span class="toc-number">3.</span> <span class="toc-text">
+          grep</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sed"><span class="toc-number">4.</span> <span class="toc-text">
+          sed</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#awk"><span class="toc-number">5.</span> <span class="toc-text">
+          awk</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sort"><span class="toc-number">6.</span> <span class="toc-text">
+          sort</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#comm"><span class="toc-number">7.</span> <span class="toc-text">
+          comm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uniq"><span class="toc-number">8.</span> <span class="toc-text">
+          uniq</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#tr"><span class="toc-number">9.</span> <span class="toc-text">
+          tr</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#head"><span class="toc-number">10.</span> <span class="toc-text">
+          head</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#tail"><span class="toc-number">11.</span> <span class="toc-text">
+          tail</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#wc"><span class="toc-number">12.</span> <span class="toc-text">
+          wc</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#find"><span class="toc-number">13.</span> <span class="toc-text">
+          find</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#tsort"><span class="toc-number">14.</span> <span class="toc-text">
+          tsort</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#tee"><span class="toc-number">15.</span> <span class="toc-text">
+          tee</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#The-%E2%80%98-gt-%E2%80%99-Symbol"><span class="toc-number">16.</span> <span class="toc-text">
+          The ‘&gt;’ Symbol</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#The-%E2%80%98-lt-%E2%80%99-Symbol"><span class="toc-number">17.</span> <span class="toc-text">
+          The ‘&lt;’ Symbol</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/265c42ae/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/265c42ae/';
+        this.page.identifier = 'posts/265c42ae/';
+        this.page.title = '常见的Linux数据处理命令';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

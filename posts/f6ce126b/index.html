@@ -1,0 +1,461 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言Dataset 是 Spark SQL 中的一种强类型数据结构。用于抽象结构化查询。在 Spark 2.x 中，我们常常会用到 Dataset  API 来表达我们对数据集的操作。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dataset - Structured Query with Data Encoder">
+<meta property="og:url" content="https://timemachine.icu/posts/f6ce126b/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言Dataset 是 Spark SQL 中的一种强类型数据结构。用于抽象结构化查询。在 Spark 2.x 中，我们常常会用到 Dataset  API 来表达我们对数据集的操作。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd41bh53dpj30dp0b7aak.jpg">
+<meta property="article:published_time" content="2020-03-23T06:17:37.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.120Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd41bh53dpj30dp0b7aak.jpg"><title>Dataset - Structured Query with Data Encoder | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/f6ce126b/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Dataset - Structured Query with Data Encoder</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-03-23</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">1.3k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">11分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h2 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h2>
+      <p>Dataset 是 Spark SQL 中的一种强类型数据结构。用于抽象结构化查询。在 Spark 2.x 中，我们常常会用到 Dataset  API 来表达我们对数据集的操作。</p>
+<a id="more"></a>
+
+        <h2 id="Dataset"   >
+          <a href="#Dataset" class="heading-link"><i class="fas fa-link"></i></a>Dataset</h2>
+      <p>我们知道 Dataset 代表的是数据集，那么 Dataset 的数据结构构成就是数据集合吗？下面这张图为我们展现了是什么构成了 Dataset。Dataset 到底是什么？<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd41bh53dpj30dp0b7aak.jpg"><br>Dataset 包含以下三种元素（这在我们程序 debug 的时候也可以看到）</p>
+<p>QuerExecution （解析未分析的 LogicalPlan 逻辑计划）<br>Encoder （解析每行数据，序列化或者反序列化对应数据。eg：DataFrame 用的是 RowEncoder。）<br>SparkSession<br>Dataset 是惰性计算的，只有遇到 action 算子在才会真正的触发计算。相比 DataFrame，Dataset 提供了声明式和类型安全的操作符。更通俗点来说，Dataset 是强类型的，而 DataFrame 是弱类型的。</p>
+<p>Dataset 是强类型 typedrel 的，会在编译的时候进行类型检测；而 DataFrame 是弱类型 untypedrel 的，在执行的时候进行类型检测。<br>Dataset 是通过 Encoder 进行序列化，支持动态的生成代码，直接在 bytes 的层面进行排序，过滤等的操作。而 DataFrame 是采用可选的 java 的标准序列化或是 kyro 进行序列化。<br>Dataset 在 Spark 1.6的 feature 中被引入。到了Spark 2.x 中，对 Dataset 和 DataFrame 做了统一。type DataFrame = Dataset[Row]<br>我们可以对比一下 Dataset 和 DataFrame 的执行计划，可以看到 DataFrame 在分析执行计划时并没有提供类型检查。而 Dataset 却可以做到，这些都是由 scala 编译器自动完成的。这也是 Dataset 更吸引人的地方。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; spark.range(<span class="number">1</span>).toDF.filter(_ == <span class="number">0</span>).explain(<span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">== <span class="type">Parsed</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line"><span class="symbol">&#x27;TypedFilter</span> &lt;function1&gt;, interface org.apache.spark.sql.<span class="type">Row</span>, [<span class="type">StructField</span>(id,<span class="type">LongType</span>,<span class="literal">false</span>)], unresolveddeserializer(createexternalrow(getcolumnbyordinal(<span class="number">0</span>, <span class="type">LongType</span>), <span class="type">StructField</span>(id,<span class="type">LongType</span>,<span class="literal">false</span>)))</span><br><span class="line">+- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">1</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Analyzed</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line">id: bigint</span><br><span class="line"><span class="type">TypedFilter</span> &lt;function1&gt;, interface org.apache.spark.sql.<span class="type">Row</span>, [<span class="type">StructField</span>(id,<span class="type">LongType</span>,<span class="literal">false</span>)], createexternalrow(id#<span class="number">23</span>L, <span class="type">StructField</span>(id,<span class="type">LongType</span>,<span class="literal">false</span>))</span><br><span class="line">+- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">1</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Optimized</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line"><span class="type">TypedFilter</span> &lt;function1&gt;, interface org.apache.spark.sql.<span class="type">Row</span>, [<span class="type">StructField</span>(id,<span class="type">LongType</span>,<span class="literal">false</span>)], createexternalrow(id#<span class="number">23</span>L, <span class="type">StructField</span>(id,<span class="type">LongType</span>,<span class="literal">false</span>))</span><br><span class="line">+- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">1</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Physical</span> <span class="type">Plan</span> ==</span><br><span class="line">*(<span class="number">1</span>) <span class="type">Filter</span> &lt;function1&gt;.apply</span><br><span class="line">+- *(<span class="number">1</span>) <span class="type">Range</span> (<span class="number">0</span>, <span class="number">1</span>, step=<span class="number">1</span>, splits=<span class="number">4</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; spark.range(<span class="number">1</span>).filter(_ == <span class="number">0</span>).explain(<span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">== <span class="type">Parsed</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line"><span class="symbol">&#x27;TypedFilter</span> &lt;function1&gt;, <span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">Long</span>, [<span class="type">StructField</span>(value,<span class="type">LongType</span>,true)], <span class="title">unresolveddeserializer</span>(<span class="params">staticinvoke(class java.lang.<span class="type">Long</span>, <span class="type">ObjectType</span>(class java.lang.<span class="type">Long</span></span>), <span class="title">valueOf</span>, <span class="title">upcast</span>(<span class="params">getcolumnbyordinal(0, <span class="type">LongType</span></span>), <span class="title">LongType</span>, <span class="title">-</span> <span class="title">root</span> <span class="title">class</span></span>: <span class="string">&quot;java.lang.Long&quot;</span>), <span class="literal">true</span>, <span class="literal">false</span>))</span><br><span class="line">+- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">1</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Analyzed</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line">id: bigint</span><br><span class="line"><span class="type">TypedFilter</span> &lt;function1&gt;, <span class="class"><span class="keyword">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">Long</span>, [<span class="type">StructField</span>(value,<span class="type">LongType</span>,true)], <span class="title">staticinvoke</span>(<span class="params">class java.lang.<span class="type">Long</span>, <span class="type">ObjectType</span>(class java.lang.<span class="type">Long</span></span>), <span class="title">valueOf</span>, <span class="title">cast</span>(<span class="params">id#27L as bigint</span>), <span class="title">true</span>, <span class="title">false</span>)</span></span><br><span class="line"><span class="class"><span class="title">+-</span> <span class="title">Range</span> (<span class="params">0, 1, step=1, splits=<span class="type">Some</span>(4</span>))</span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"><span class="title">==</span> <span class="title">Optimized</span> <span class="title">Logical</span> <span class="title">Plan</span> <span class="title">==</span></span></span><br><span class="line"><span class="class"><span class="title">TypedFilter</span> <span class="title">&lt;function1&gt;</span>, <span class="title">class</span> <span class="title">java</span>.<span class="title">lang</span>.<span class="title">Long</span>, [<span class="type">StructField</span>(value,<span class="type">LongType</span>,true)], <span class="title">staticinvoke</span>(<span class="params">class java.lang.<span class="type">Long</span>, <span class="type">ObjectType</span>(class java.lang.<span class="type">Long</span></span>), <span class="title">valueOf</span>, <span class="title">id#27L</span>, <span class="title">true</span>, <span class="title">false</span>)</span></span><br><span class="line"><span class="class"><span class="title">+-</span> <span class="title">Range</span> (<span class="params">0, 1, step=1, splits=<span class="type">Some</span>(4</span>))</span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"><span class="title">==</span> <span class="title">Physical</span> <span class="title">Plan</span> <span class="title">==</span></span></span><br><span class="line"><span class="class"><span class="title">*</span>(<span class="params">1</span>) <span class="title">Filter</span> <span class="title">&lt;function1&gt;</span>.<span class="title">apply</span></span></span><br><span class="line"><span class="class"><span class="title">+-</span> <span class="title">*</span>(<span class="params">1</span>) <span class="title">Range</span> (<span class="params">0, 1, step=1, splits=4</span>)</span></span><br></pre></td></tr></table></div></figure>
+<p>Dataset 是可查询的，可序列化的，并且可以作持久化存储。</p>
+<p>SparkSession 和 QueryExecution 作为 Dataset 的临时属性不会被序列化。但是 Encoder 会被序列化，反序列化的时候还需要 Encoder 来解析。<br>Dataset 默认的存储级别是 MEMORY_AND_DISK。这里后面的 cache &amp;&amp; persist 会讲到。<br>Spark 2.X 提供了 Structured Streaming。其还是使用 Dataset 来做为底层的数据结构来进行静态有界数据流和无界数据流的计算。通过 Dataset 提供的统一 API。我们可以更关注不同编程模型的计算逻辑。</p>
+
+        <h2 id="DataFrame"   >
+          <a href="#DataFrame" class="heading-link"><i class="fas fa-link"></i></a>DataFrame</h2>
+      <p>在 Dataset 小节里面也简单提到了 DataFrame 是什么以及和 Dataset 的区别。这里单独拿出来讲下如何创建 DataFrame 以及 DataFrame 的一些简单操作。因为工作中很多情况下都是从文件或者数据库中读取（DataFrameReader 在读取时会调用 ofRows 生成 DataFrame）。</p>
+<p>DataFrame 可以被看作是由 row 和 named columns 组成的分布式表格数据集。就跟关系型数据中的一张数据表一样，我们可以对其进行 select，filter，join，group 等操作。其具有 RDD 的一切特性，比如，弹性，并行，分布式，只读。</p>
+<p>下面是一个简单的 word count 程序</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">scala&gt; <span class="keyword">val</span> df = <span class="type">Seq</span>((<span class="string">&quot;one&quot;</span>, <span class="number">1</span>), (<span class="string">&quot;one&quot;</span>, <span class="number">1</span>), (<span class="string">&quot;two&quot;</span>, <span class="number">1</span>)).toDF(<span class="string">&quot;word&quot;</span>, <span class="string">&quot;count&quot;</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; df.groupBy(<span class="string">&quot;word&quot;</span>).count().show()</span><br><span class="line">+----+-----+</span><br><span class="line">|word|count|</span><br><span class="line">+----+-----+</span><br><span class="line">| two|    <span class="number">1</span>|</span><br><span class="line">| one|    <span class="number">2</span>|</span><br><span class="line">+----+-----+</span><br></pre></td></tr></table></div></figure>
+<p>从 Scala 序列或者 case class 或者 createDataFrame 创建 DataFrame</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> df = <span class="type">Seq</span>((<span class="number">1</span>, <span class="number">2</span>), (<span class="number">3</span>, <span class="number">4</span>)).toDF(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;id+&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">People</span>(<span class="params">name:<span class="type">String</span>, age:<span class="type">Int</span></span>)</span></span><br><span class="line"><span class="class"><span class="title">val</span> <span class="title">people</span> </span>= <span class="type">Seq</span>(<span class="type">People</span>(<span class="string">&quot;zz&quot;</span>, <span class="number">1</span>))</span><br><span class="line"><span class="keyword">val</span> df1 = spark.createDataFrame(people)</span><br><span class="line"><span class="keyword">val</span> df2 = people.toDF </span><br></pre></td></tr></table></div></figure>
+<p>通过 DataFrameReader 创建 DataFrame，经常用到的方法，支持多种数据源的读取，json，csv，parquet，text，JDBC，Kafka等等。在后面的 DataSource API 中会详细讲。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">val</span> reader = spark.read</span><br><span class="line">reader: org.apache.spark.sql.<span class="type">DataFrameReader</span> = org.apache.spark.sql.<span class="type">DataFrameReader</span>@<span class="number">2125</span>bb4e</span><br><span class="line"></span><br><span class="line">scala&gt; reader.json(<span class="string">&quot;file.json&quot;</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; reader.csv(<span class="string">&quot;file.csv&quot;</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; reader.parquet(<span class="string">&quot;file.parquet&quot;</span>)</span><br></pre></td></tr></table></div></figure>
+
+
+<p>DataFrame query，你可以像使用数据表一样，通过 SQL 和 Dataset API 来对 DataFrame 进行查询计算。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">improt org.apache.spark.sql.functions._</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> columns  = <span class="type">Seq</span>(<span class="string">&quot;name&quot;</span>, <span class="string">&quot;age&quot;</span>, <span class="string">&quot;grade&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> a = df.select(colums.map(col(_)): _*) <span class="comment">// select 接受 Column 类型，所以需要做转换</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> b = df.selectExpr(columns: _*)  <span class="comment">// selectExpr 接受 Expression 类型</span></span><br><span class="line"></span><br><span class="line">a.filter($<span class="string">&quot;name&quot;</span>.equalTo(<span class="string">&quot;Time Machine&quot;</span>))</span><br><span class="line"></span><br><span class="line">a.groupBy(<span class="string">&quot;age&quot;</span>).count()</span><br><span class="line"></span><br><span class="line">a.withColumn(<span class="string">&quot;GradeString&quot;</span>, $<span class="string">&quot;grade&quot;</span>.toString)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> table = a.registerTempTable(<span class="string">&quot;people&quot;</span>) (<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> sql = spark.sql(<span class="string">&quot;SELECT count(*) AS count FROM people&quot;</span>)</span><br></pre></td></tr></table></div></figure>
+
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/f6ce126b/">https://timemachine.icu/posts/f6ce126b/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Spark/">Spark</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/5d48686a/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Row &amp;&amp; Column - Compose &quot;Tabular Data Set&quot;</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/aaf17d15/"><span class="paginator-prev__text">Spark简介</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Dataset"><span class="toc-number">2.</span> <span class="toc-text">
+          Dataset</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DataFrame"><span class="toc-number">3.</span> <span class="toc-text">
+          DataFrame</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/f6ce126b/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/f6ce126b/';
+        this.page.identifier = 'posts/f6ce126b/';
+        this.page.title = 'Dataset - Structured Query with Data Encoder';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

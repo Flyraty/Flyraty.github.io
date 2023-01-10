@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>TimeMachine Notes</title>
+  
+  <subtitle>愿一直遇到有趣的人和事</subtitle>
+  <link href="https://timemachine.icu/atom.xml" rel="self"/>
+  
+  <link href="https://timemachine.icu/"/>
+  <updated>2023-01-10T14:41:06.120Z</updated>
+  <id>https://timemachine.icu/</id>
+  
+  <author>
+    <name>时光机</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Doris 物化视图</title>
+    <link href="https://timemachine.icu/posts/56052ea3/"/>
+    <id>https://timemachine.icu/posts/56052ea3/</id>
+    <published>2022-11-04T12:32:29.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;物化视图（Materialized View）本质是一种预计算，即把某些耗时的操作（例如JOIN、AGGREGATE）的结果保存下来，以便在查询时直接复用，从而避免这些耗时的操作，最终达到加速查询的目的。其作为一种检索加速技术，应用在许多 olap 引擎中，本文以 Doris 为例，主要介绍 Doris 的物化视图实现、应用场景以及如何查看是否命中物化视图、如果没有命中的话，原因又是哪些。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Doris" scheme="https://timemachine.icu/tags/Doris/"/>
+    
+    <category term="StarRocks" scheme="https://timemachine.icu/tags/StarRocks/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>漫谈数据库索引</title>
+    <link href="https://timemachine.icu/posts/83cc46f2/"/>
+    <id>https://timemachine.icu/posts/83cc46f2/</id>
+    <published>2022-09-14T13:23:49.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;为什么要了解数据索引呢？我们都知道索引结构一般会加速查询，那这些索引是如何加速查询的呢？我们有时候建立了索引，但是查询比没建索引都要慢，这又是为什么呢？我们有时候会根据不同的业务场景选择不同的索引类型，选择的依据又是什么呢？&lt;/p&gt;
+&lt;p&gt;带着以上几个疑惑，让我们开始了解数据库索引到底是啥，它的底层数据结构是什么样子的，是怎样加速查询的，索引本身又做了哪些优化。希望读完本文后，可以为你解决上述存留在心中的疑问。&lt;/p&gt;
+&lt;p&gt;在这里也顺便提下个人对大数据的理解，大数据其实就是海量数据的存储和检索，前者关注于如何更高效的把数据放到存储介质上，后者关注于如何更高效的把数据从存储介质上检索出来，需要注意这里的检索指的是检查数据是否存在，如果数据存在则返回。而索引又是检索的核心，了解索引之后会对理解整个检索过程有更深刻的理解，比如执行计划的解析，join order 等等的影响。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="数据索引" scheme="https://timemachine.icu/tags/%E6%95%B0%E6%8D%AE%E7%B4%A2%E5%BC%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>工作中实践过的数据流架构</title>
+    <link href="https://timemachine.icu/posts/6796f734/"/>
+    <id>https://timemachine.icu/posts/6796f734/</id>
+    <published>2022-07-13T11:09:05.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;在作业帮工作过程中，接触了 leads 线索数据、端外信息流广告，端内营销广告、用户画像平台等各种数据的处理。每种数据结合其业务查询场景又有不同的架构选型。本文主要用来记录这几份业务数据的数据流架构，并讨论为什么这样实现，有哪些优缺点。&lt;/p&gt;</summary>
+    
+    
+    
+    
+    <category term="数据架构" scheme="https://timemachine.icu/tags/%E6%95%B0%E6%8D%AE%E6%9E%B6%E6%9E%84/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>druid集群运维</title>
+    <link href="https://timemachine.icu/posts/10507b28/"/>
+    <id>https://timemachine.icu/posts/10507b28/</id>
+    <published>2022-07-13T11:08:14.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;作业帮内部营销中台（以下简称 IMP）承载着整个公司各个 app 端的流量分发，对智能化运营，精细化的营销广告投放起着至关重要的作用。对这些流量数据的链路转化进行有效的分析更是重中之重。&lt;/p&gt;
+&lt;p&gt;IMP 的整个链路流量数据处理采用的 flink + druid，并强依赖于 druid 提供上层的 BI，监控平台，算法接口，策略平台数据服务等线上应用。作为内部最大的 druid 集群，如何保证其能稳定的支撑海量数据的摄入与查询就成为了一个大问题。本来主要记录在对 druid 集群运维过程中碰到的一些问题以及优化。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Druid" scheme="https://timemachine.icu/tags/Druid/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>doris/starrocks 碎碎念</title>
+    <link href="https://timemachine.icu/posts/6ccdea5/"/>
+    <id>https://timemachine.icu/posts/6ccdea5/</id>
+    <published>2022-07-13T03:36:29.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;2020 年末入职作业帮，接触到了 doris，当时还是 doris on es，后来随着业务的发展，从 doe 切到 dorisdb，再到 starrocks，期间做过了很多基础测试（包括离线，实时摄入，doris 本身的数据集成工具，apache seatunnel 的 doris connector 等），也碰到过很多慢查询问题，内部的广告用户画像平台也是基于 starrocks 进行构建的。本文主要在回忆下碰到的问题吧，对一些至今仍未解决的问题也会留下自己的猜想，希望后面有机会可以在验证吧。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Doris" scheme="https://timemachine.icu/tags/Doris/"/>
+    
+    <category term="StarRocks" scheme="https://timemachine.icu/tags/StarRocks/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>未知的征程</title>
+    <link href="https://timemachine.icu/posts/b6b0cbc6/"/>
+    <id>https://timemachine.icu/posts/b6b0cbc6/</id>
+    <published>2022-07-13T03:35:55.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;2022 年5月份之后发生了很多事情，面试的身心俱疲，亲人的突然病故，面对各种选择时的犹豫不决。未来到底要做成什么样子呢？工作的意义又是什么呢？&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="生活" scheme="https://timemachine.icu/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+    <category term="生活" scheme="https://timemachine.icu/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>doris实时数据摄入测试</title>
+    <link href="https://timemachine.icu/posts/a521d11e/"/>
+    <id>https://timemachine.icu/posts/a521d11e/</id>
+    <published>2022-05-03T03:12:11.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;观察 flink-doris-connector 和 RoutineLoad 的数据摄入情况，包括 kafka消费速率、doris 集群情况、doris 数据导入速率、各种调参造成的性能波动、不同 doris 表数据模型以及数据处理语义对导入性能的影响。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Doris" scheme="https://timemachine.icu/tags/Doris/"/>
+    
+    <category term="StarRocks" scheme="https://timemachine.icu/tags/StarRocks/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>之前的一些学习目标和计划</title>
+    <link href="https://timemachine.icu/posts/291450/"/>
+    <id>https://timemachine.icu/posts/291450/</id>
+    <published>2022-04-07T08:47:23.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;好久没有更新过博客了，去年接触了很多大数据技术相关的东西，也做过一些基准测试。但是很多东西依然了解的相对浅显，只停留在使用层面，想下笔却又不知道从何写起。2021 年结束的时候曾列过一些计划，也算是学习过程中的一份指南吧。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="学习" scheme="https://timemachine.icu/tags/%E5%AD%A6%E4%B9%A0/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>OneData探索</title>
+    <link href="https://timemachine.icu/posts/918e25c9/"/>
+    <id>https://timemachine.icu/posts/918e25c9/</id>
+    <published>2022-03-25T03:29:45.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;2021 年下半年主要做的是 IMP 实时/离线数据流的摄入以及涉及的各种 BI 报表工作。IMP 即内部营销平台，也可以叫作端内广告投放，作为最前置的业务，IMP 整个链路横跨广告投放、策略分流、落地页、微信导流、短信/PUSH、成单等多个垂直业务单元。随着业务需求的频繁迭代，之前构建的业务数仓暴露出来越来越多的问题，表、字段的命名不统一，同一业务不同表之间的逻辑耦合，相同指标不同口径实现的来回对数也对数据研发侧造成了很大困扰，由此本身产出的数据指标的置信性也开始受到挑战。&lt;/p&gt;
+&lt;p&gt;基于以上问题，2022 年开始做了一些离线业务数仓方向上的调研以及落地规划。目标是在支撑业务快速迭代开发的前提下，统一化字段业务口径，规范化离线数据开发，降低离线表的存储资源，去除逻辑的冗余开发，提高离线 ETL 的开发效率。&lt;/p&gt;
+&lt;p&gt;本文主要介绍个人基于 OneData 的一些看法，并举一些例子。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="OneData" scheme="https://timemachine.icu/tags/OneData/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>MR Job Counters 分析</title>
+    <link href="https://timemachine.icu/posts/d0259ab8/"/>
+    <id>https://timemachine.icu/posts/d0259ab8/</id>
+    <published>2021-10-21T14:52:55.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;MapReduce 的 Counters 对任务执行分析有一定帮助，本文主要记录其中参数的含义及一些使用。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Hadoop" scheme="https://timemachine.icu/tags/Hadoop/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>druid 离线摄入任务优化</title>
+    <link href="https://timemachine.icu/posts/b0339e9e/"/>
+    <id>https://timemachine.icu/posts/b0339e9e/</id>
+    <published>2021-10-11T10:32:55.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;最近 Yarn 队列资源收缩后，部分流量数据的 druid 离线摄入任务执行时间过长，经常由于申请不到 container 导致并发过低或者 reduce task 频繁失败重试，耗时 6~8h 才能完成。由于本身已经是 T+1 数据，离线摄入执行过长对下游使用方造成了很不好的使用体验。本文主要记录如何定位问题及如何解决。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Druid" scheme="https://timemachine.icu/tags/Druid/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>druid 问题记录</title>
+    <link href="https://timemachine.icu/posts/ea82a2ca/"/>
+    <id>https://timemachine.icu/posts/ea82a2ca/</id>
+    <published>2021-08-19T10:46:45.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;日常工作中采用 Druid 做流量日志分析。因为是刚接触，所以在离线/实时数据摄入过程中经常会碰到一些问题，本文主要用来记录这些问题及一些思考。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Druid" scheme="https://timemachine.icu/tags/Druid/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>基于 gitbook 搭建笔记站点</title>
+    <link href="https://timemachine.icu/posts/fd7aaf9e/"/>
+    <id>https://timemachine.icu/posts/fd7aaf9e/</id>
+    <published>2021-08-19T02:34:55.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;目前使用 hexo+github pages 构建博客站，但是作为笔记管理系统有两个缺点：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;笔记是学习一个事物的过程，记录可能比较随意。博客是学习一个事物并实践之后得到的思考。放到同一个主站点下面，即使打了 tags，给人的感觉也比较混乱。&lt;/li&gt;
+&lt;li&gt;hexo 笔记分层管理不太方便，需要自己新建 tab，并逐级构建章节文件夹，并且新建的 tab 对目录集成不是很好。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;本文主要记录 gitbook 的搭建集成，参考了 &lt;a href=&quot;https://blog.csdn.net/qq_40889820/article/details/110013310&quot;&gt;打造完美写作系统：Gitbook+Github Pages+Github Actions&lt;/a&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="工具" scheme="https://timemachine.icu/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="gitbook" scheme="https://timemachine.icu/tags/gitbook/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Prometheus + Grafana 监控 - Kafka</title>
+    <link href="https://timemachine.icu/posts/dc1a86bd/"/>
+    <id>https://timemachine.icu/posts/dc1a86bd/</id>
+    <published>2021-08-01T13:37:35.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;最近工作中越来越感受到监控对于查找问题的重要性，一个完备的链路监控对问题定位和趋势分析提效非常高。比如一条实时数据流，从数据采集到消费到入库各个阶段都有一些可观测性的指标（binlog 采集延迟，kafka-lag，读写 QPS，max-request-size，offset 趋势）。如果 kafka-lag 比较小并且 topic 写 QPS没打太高，但是数据有延迟，这里大概率就是上游采集的问题。&lt;br&gt;这里借用 prometheus 官网的话介绍监控的作用。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;长期趋势分析：通过对监控样本数据的持续收集和统计，对监控指标进行长期趋势分析。例如，通过对磁盘空间增长率的判断，我们可以提前预测在未来什么时间节点上需要对资源进行扩容。&lt;/li&gt;
+&lt;li&gt;对照分析：两个版本的系统运行资源使用情况的差异如何？在不同容量情况下系统的并发和负载变化如何？通过监控能够方便的对系统进行跟踪和比较。&lt;/li&gt;
+&lt;li&gt;告警：当系统出现或者即将出现故障时，监控系统需要迅速反应并通知管理员，从而能够对问题进行快速的处理或者提前预防问题的发生，避免出现对业务的影响。&lt;/li&gt;
+&lt;li&gt;故障分析与定位：当问题发生后，需要对问题进行调查和处理。通过对不同监控监控以及历史数据的分析，能够找到并解决根源问题。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;本系列主要用来记录工作中常见系统的监控实现，指标含义以及如何通过监控定位问题并在相关任务挂掉后如何和给下游业务一个较准确的预估恢复时间。大部分借助开源实现。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="大数据运维" scheme="https://timemachine.icu/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E8%BF%90%E7%BB%B4/"/>
+    
+    
+    <category term="Grafana" scheme="https://timemachine.icu/tags/Grafana/"/>
+    
+    <category term="Prometheus" scheme="https://timemachine.icu/tags/Prometheus/"/>
+    
+    <category term="kafka_exporter" scheme="https://timemachine.icu/tags/kafka-exporter/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Mac-Homebrew-常见问题</title>
+    <link href="https://timemachine.icu/posts/c670d00d/"/>
+    <id>https://timemachine.icu/posts/c670d00d/</id>
+    <published>2021-05-15T13:01:42.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;Homebrew 是 Mac 下方便快捷的包管理器。但是有时候因为其版本迭代等，导致 &lt;code&gt;brew update&lt;/code&gt; 执行后各种依赖报错或者 Warning。emmm，碰到好几次了，并且由于网上解决办法参差不齐，每次解决浪费了大量时间。遂记录下每次的解决方法。建议遇到问题去查看官方 issue&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="工具" scheme="https://timemachine.icu/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="Mac" scheme="https://timemachine.icu/tags/Mac/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Mac重装系统找不到磁盘主盘，无法抹掉</title>
+    <link href="https://timemachine.icu/posts/23b10311/"/>
+    <id>https://timemachine.icu/posts/23b10311/</id>
+    <published>2021-02-15T13:57:08.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;最近打算把自己 Mac 卖掉，重装系统碰到了个问题，搞了一天多才搞定，遂记录下。具体是在线重装系统进入到磁盘工具后，找不到主盘，只有一个不到 3G 的 disk0，无法抹掉主盘上的数据且重装系统的时候也识别不到主盘。和&lt;a href=&quot;https://www.jianshu.com/p/69346847efd0&quot;&gt;这个问题&lt;/a&gt;比较类似，不过解决办法真是扯了，网上都是千篇一律，说不清楚，根本不能解决😑 。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="工具" scheme="https://timemachine.icu/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="Mac" scheme="https://timemachine.icu/tags/Mac/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Elasticsearch 与 Hive 集成</title>
+    <link href="https://timemachine.icu/posts/6614a01c/"/>
+    <id>https://timemachine.icu/posts/6614a01c/</id>
+    <published>2021-01-12T14:11:47.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;工作上存在将 Hive 上的数据刷到 ES 的场景，首先想到的是自己写程序读取 Hive 上的数据，经过业务逻辑处理在写回到 ES 上，不过请教了下，知道了 ES 本身已经可以和 Hive 集成。只需添加对应的 jar 包，在 hive 上建立与 ES 关联的外部表，即可使用 HQL 查询写入 ES 索引库。具体使用请见&lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/hadoop/current/hive.html&quot;&gt;官方文档&lt;/a&gt; ，本文只举个简单例子及介绍下主要的参数。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Elasticsearch" scheme="https://timemachine.icu/tags/Elasticsearch/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>实时消费 MySQL Binlog</title>
+    <link href="https://timemachine.icu/posts/d5c98b55/"/>
+    <id>https://timemachine.icu/posts/d5c98b55/</id>
+    <published>2021-01-02T06:55:10.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;最近工作中用到的，以前没有搞过 binlog，遂在本地完整的跑遍 demo 看看。整体数据流如下，Canal 接收 MySQL Binlog 到 Kafka。Spark Streaming 消费数据写到 ES。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="BigData" scheme="https://timemachine.icu/categories/BigData/"/>
+    
+    
+    <category term="Spark" scheme="https://timemachine.icu/tags/Spark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2020阴霾之下</title>
+    <link href="https://timemachine.icu/posts/e6a74345/"/>
+    <id>https://timemachine.icu/posts/e6a74345/</id>
+    <published>2020-12-31T10:05:33.000Z</published>
+    <updated>2023-01-10T14:41:06.120Z</updated>
+    
+    
+    <summary type="html">&lt;h4 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h4&gt;&lt;p&gt;2020 经历了太多的事情，很幸运的是我身边有很多朋友，是他们在我落寞的时候给了我鼓励。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="生活" scheme="https://timemachine.icu/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+    <category term="生活" scheme="https://timemachine.icu/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>多个 git 账户配置 SSH</title>
+    <link href="https://timemachine.icu/posts/9e62987f/"/>
+    <id>https://timemachine.icu/posts/9e62987f/</id>
+    <published>2020-12-26T14:01:21.000Z</published>
+    <updated>2023-01-10T14:41:06.124Z</updated>
+    
+    
+    <summary type="html">&lt;h3 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h3&gt;&lt;p&gt;个人代码维护在 github，而目前大多数公司代码维护在私有 gitlab。这是两套不同的账户体系，并且一般私有 gitlab 的 commit email 不能更改，git 全局的用户名和邮箱只能有一个。这就导致了如下问题 → 不管配置了几个 SSH pub key，SSH 认证最终走的都是 global 的用户名的认证（比如你全局的用户是 github 的，那么你提交 gitlab 就会报 Permission Denied）。本文主要用来解决此问题。&lt;br&gt;其实多个 SSH 配置的话都是这样搞的，配个路由就好了。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Linux" scheme="https://timemachine.icu/categories/Linux/"/>
+    
+    
+    <category term="Linux" scheme="https://timemachine.icu/tags/Linux/"/>
+    
+  </entry>
+  
+</feed>

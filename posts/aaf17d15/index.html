@@ -1,0 +1,576 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言Apache Spark 是一个快速的通用集群计算系统。它提供了Java， Scala， Python ，R 四种编程语言的 API 编程接口和基于 DAG 图执行的优化引擎。它还支持一系列丰富的高级工具：处理结构化数据的 Spark SQL，用于机器学习的 MLlib，控制图、并行图操作和计算的一组算法和工具的集合 GraphX，数据流处理 Spark Streaming。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark简介">
+<meta property="og:url" content="https://timemachine.icu/posts/aaf17d15/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言Apache Spark 是一个快速的通用集群计算系统。它提供了Java， Scala， Python ，R 四种编程语言的 API 编程接口和基于 DAG 图执行的优化引擎。它还支持一系列丰富的高级工具：处理结构化数据的 Spark SQL，用于机器学习的 MLlib，控制图、并行图操作和计算的一组算法和工具的集合 GraphX，数据流处理 Spark Streaming。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wn0othhj310e0gqn9d.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wn9j0tpj310a0dg10o.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wnqk3zoj30g40cc0w6.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wobuz5jj30gh094n22.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3woz9wg5j30ex0690uu.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wq5tungj30u00gy751.jpg">
+<meta property="article:published_time" content="2020-03-23T06:17:22.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg"><title>Spark简介 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/aaf17d15/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Spark简介</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-03-23</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">2.4k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">14分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h2 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h2>
+      <p>Apache Spark 是一个快速的通用集群计算系统。它提供了Java， Scala， Python ，R 四种编程语言的 API 编程接口和基于 DAG 图执行的优化引擎。它还支持一系列丰富的高级工具：处理结构化数据的 Spark SQL，用于机器学习的 MLlib，控制图、并行图操作和计算的一组算法和工具的集合 GraphX，数据流处理 Spark Streaming。</p>
+<a id="more"></a>
+
+<p>本栏目主要讲解的是 Spark SQL。Spark SQL 是用来处理结构化数据的 Spark 模块。与底层的 RDD API 不同的是，Spark SQL 提供的接口为 Spark 提供了更多的数据结构和计算信息。在内部，Spark SQL 会根据这些额外的信息来执行额外的优化。我们可以通过 SQL 和 DataSet API 来与 Spark SQL 进行交互。当计算结果时，会使用相同的 SQL 执行引擎，而与你用来实现计算的 API/语言无关。这种统一意味着开发人员可以很容易地在不同的 API 之间来回切换，基于这些 Spark 提供了非常自然的转换表达式。</p>
+<p>我个人是在 2019 年 3 月份开始接触 Spark，说实话 Spark 非常容易上手，其接口简洁易懂，尤其是和 Scala 的结合，有时候每个数据处理单元不超过十行代码就可以完成对 T 级别数据的处理，并且速度非常高效。抛却编程语言，只要你会 SQL ，就可以将你的分析任务转换为 Spark 作业来处理。这点对除程序员外的分析人员也是非常友好的。当然其也有限制使用的场景，这些在本栏目下面都会讲到</p>
+
+        <h2 id="基本理念"   >
+          <a href="#基本理念" class="heading-link"><i class="fas fa-link"></i></a>基本理念</h2>
+      
+        <h3 id="RDD"   >
+          <a href="#RDD" class="heading-link"><i class="fas fa-link"></i></a>RDD</h3>
+      <p>弹性分布式数据集。分布在集群各个节点上可以并行处理的数据集。其实我们可以按照词的语义来分析想一下 RDD 为什么是弹性的？RDD 是如何分布式的？RDD的数据集到底指的是什么？借用一下官方文档的原话 The main abstraction Spark provides is a resilient distributed dataset (RDD), which is a collection of elements partitioned across the nodes of the cluster that can be operated on in parallel.</p>
+
+        <h3 id="DataSet-DataFrame"   >
+          <a href="#DataSet-DataFrame" class="heading-link"><i class="fas fa-link"></i></a>DataSet/DataFrame</h3>
+      <p>Spark 2.X 抽象出来的上层数据结构。本质上也是并行的数据集合。提供了更多的数据操作方法。个人理解为 DataFrame 是一种特殊 DataSet，DataFrame = DataSet[Row]。而DataSet 往往指的是 DataSet[T]，T 可以是自定义的数据类型，比如 case class。</p>
+
+        <h3 id="Task"   >
+          <a href="#Task" class="heading-link"><i class="fas fa-link"></i></a>Task</h3>
+      <p>具体执行的任务，分为 ShuffleMapTask 和 ResultTask。分别类似于 MapReduce 中的 Map 和 Reduce 任务。</p>
+
+        <h3 id="Job"   >
+          <a href="#Job" class="heading-link"><i class="fas fa-link"></i></a>Job</h3>
+      <p>用户提交的 Spark 作业，由一个或者多个 taks 组成</p>
+
+        <h3 id="Stage"   >
+          <a href="#Stage" class="heading-link"><i class="fas fa-link"></i></a>Stage</h3>
+      <p>Job 分成的阶段，一个 Spark 作业常被分为一个或者多个 Stage。 Stage 基于 RDD 的 DAG 依赖关系图进行划分。调度器从 DAG 图末端出发，遇到 ShuffleDependecy 就断开。遇到 NarrowDependecy 就加入到当前 Stage。</p>
+
+        <h3 id="Partition"   >
+          <a href="#Partition" class="heading-link"><i class="fas fa-link"></i></a>Partition</h3>
+      <p>数据分区，即一个 RDD 可以被划分成多少个分区</p>
+
+        <h3 id="Shuffle"   >
+          <a href="#Shuffle" class="heading-link"><i class="fas fa-link"></i></a>Shuffle</h3>
+      <p>有些运算需要将各节点上的同一类数据汇集到某一节点进行计算，把这些分布在不同节点的数据按照一定的规则汇集到一起的过程称为 Shuffle。后面会有单独的文章讲 Shuffle。</p>
+
+        <h3 id="NarrowDependency"   >
+          <a href="#NarrowDependency" class="heading-link"><i class="fas fa-link"></i></a>NarrowDependency</h3>
+      <p>窄依赖，即子RDD依赖于父RDD中固定的Partition。NarrowDependency 分为 OneToOneDependency 和 RangeDependency两种。</p>
+
+        <h3 id="ShuffleDependency"   >
+          <a href="#ShuffleDependency" class="heading-link"><i class="fas fa-link"></i></a>ShuffleDependency</h3>
+      <p>宽依赖，shuffle 依赖，即子 RDD 对父 RDD 中的所有 Partition 都有依赖。</p>
+
+        <h3 id="DAG"   >
+          <a href="#DAG" class="heading-link"><i class="fas fa-link"></i></a>DAG</h3>
+      <p>有向无环图，RDD 之间的依赖关系</p>
+<p>tip: Job， Stage，Task，DAG 都可以在 Spark Application UI 上看到。</p>
+
+        <h2 id="使用场景"   >
+          <a href="#使用场景" class="heading-link"><i class="fas fa-link"></i></a>使用场景</h2>
+      <p>Spark 是 基于内存迭代的计算框架，数据集操作越频繁，操作的数据量越大越适合于 Spark。当然其对内存要求也是比较高的，因此比较重。Spark 操作小数据集并且计算密度比较大时，处理的非常慢，因此不太适合这种场景。我使用 Spark 处理过几 M 大小的碎片文件，竟然需要几十 s 甚至 1min。</p>
+<p>RDD 只读并且是写操作粗粒度的，因此不支持异步细粒度更新的应用数据处理。</p>
+<p>Spark 不适用于内存 hold 不住的场景，虽然在内存不足时，由于 RDD 是弹性的，其会自动下放到磁盘，但是偶尔也会出现 OOM 的问题，降低性能。</p>
+<p>Spark 不适合高实时统计分析，Spark 2.X 的 Structured Streaming 也在快速发展，Continuous Processing还处在试验阶段。但是其受限于 RDD 以及其他原因，还是无法媲美 Flink  在高实时数据流方面的处理。</p>
+
+        <h2 id="架构"   >
+          <a href="#架构" class="heading-link"><i class="fas fa-link"></i></a>架构</h2>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wm9z12rj30gk07ydg6.jpg"></p>
+<p>Cluster Manager：在 standalone 模式中即为 Master 主节点，控制整个集群，监控 worker。在 YARN 模式中为资源管理器。</p>
+<p>Worker节点：从节点，负责控制计算节点，启动 Executor 或者 Driver。</p>
+<p>Driver： 运行 Application 的 main() 函数。</p>
+<p>Executor：执行器，某个 Application 运行在 worker node 上的一个进程。运行 task 和 管理运行过程中的数据存储</p>
+<p>Spark 应用程序作为独立的进程集运行在集群上，通过 Driver  Program 中的 SparkContext 对象来进行调度。一旦连接上 Cluster Manager（YARN，Spark 自带的 Standalone Cluster），Spark 就会在对应的 Worker 上启动 executor 进程用于计算和存储应用程序运行所需要的数据。接着你的应用程序代码会被发送到各个 executor 。SparkContext 会调度生成 task 在 executor 进程中执行。</p>
+
+        <h2 id="Spark-编程模型"   >
+          <a href="#Spark-编程模型" class="heading-link"><i class="fas fa-link"></i></a>Spark 编程模型</h2>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wn0othhj310e0gqn9d.jpg"></p>
+<p>用户使用 SparkContext 提供的 API（常用的有 textFile、sequenceFile、runJob、stop、等）编写 Driver application 程序。此外 SQLContext、HiveContext 及 StreamingContext 对 SparkContext进行封装，并提供了 SQL、Hive 及流式计算相关的 API。Spark 2.X 提供了更为方便的 SparkSession（DataFrameReader、DataFrameWriter）。</p>
+<p>使用 SparkContext 提交的用户应用程序，首先会使用 BlockManager 和 BroadcastManager 将任务的 Hadoop 配置进行广播。然后由 DAGScheduler 将任务转换为 RDD 并组织成 DAG，DAG 还将被划分为不同的 Stage。最后由T askScheduler 借助 ActorSystem 将任务提交给集群管理器（Cluster Manager）。</p>
+<p>集群管理器（ClusterManager）给任务分配资源，即将具体任务分配到 Worker 上，Worker 创建 Executor 来处理 task 的运行。Standalone、YARN、Mesos、EC2等都可以作为 Spark 的集群管理器。</p>
+
+        <h2 id="Spark-计算模型"   >
+          <a href="#Spark-计算模型" class="heading-link"><i class="fas fa-link"></i></a>Spark 计算模型</h2>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wn9j0tpj310a0dg10o.jpg"></p>
+<p>Spark 是基于内存迭代计算的框架，底层数据抽象是 RDD，通过算子来对 RDD 进行转换计算，得到目标结果。</p>
+
+        <h2 id="Spark-运行流程及特点"   >
+          <a href="#Spark-运行流程及特点" class="heading-link"><i class="fas fa-link"></i></a>Spark 运行流程及特点</h2>
+      
+        <h3 id="运行流程"   >
+          <a href="#运行流程" class="heading-link"><i class="fas fa-link"></i></a>运行流程</h3>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wnqk3zoj30g40cc0w6.jpg"></p>
+<p>启动 SparkContext</p>
+<p>SparkContext 像资源管理器申请 worker Executor资源并启动 StandaloneExecutorbackend</p>
+<p>Executor 向 SparkContext 申请 Task</p>
+<p>SparkContext 将应用程序分发给 Executor</p>
+<p>SparkContext 构建成 DAG 图，将 DAG 图分解成 Stage、将 Taskset 发送给 Task Scheduler，最后由 Task Scheduler 将 Task 发送给 Executor 运行</p>
+<p>task 执行完毕后释放资源</p>
+
+        <h3 id="特点"   >
+          <a href="#特点" class="heading-link"><i class="fas fa-link"></i></a>特点</h3>
+      <p>每个应用程序都运行在自己的 executor 进程里面，在 executor 里面又以多线程来运行各种 task。这样做的好处很明显，每个 driver  都只需调度自己的 task。来自不同应用程序产生的 task 都在在不同的 JVM 中运行。当然，这也意味着，不同 SparkContext  实例之间不能共享数据，只能先存储在外部存储系统，然后在做交互。</p>
+<p>Spark 与应用哪种集群管理器无关，只要可以获取 executor 进程并且 driver 和 executor 端可以保持通信，即使运行在还支持其他应用程序的的资源管理器（YARN 等）也是非常容易的</p>
+<p>在应用程序的一个生命周期内， driver 和 executor 端必须可以通信，否则无法分发 task及运行信息交换。这就要求 driver 端和 各个 worker 节点是网络连通的，并且 driver 端要尽量靠近 worker 端，因为 Spark Application 运行过程中 SparkContext 和 Executor 之间有大量的信息交换。</p>
+
+        <h2 id="RDD-运行流程"   >
+          <a href="#RDD-运行流程" class="heading-link"><i class="fas fa-link"></i></a>RDD 运行流程</h2>
+      <p>RDD 在 Spark 中运行的大致流程</p>
+<p>1.创建 RDD 对象</p>
+<p>2.DAGScheduler 模块介入运算，计算 RDD 之间的依赖关系，生成 DAG</p>
+<p>3.根据 DAG 划分 Stage，上面的基本概念里也简单提到了 stage 的划分。</p>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wobuz5jj30gh094n22.jpg"></p>
+<p>基于上面的例子来划分 stage，在遇到 shuffle 依赖时，DAG 会断开依赖关系，前面的操作划分为一个 Stage，后面的继续按照这样来划分。例子中总共涉及到 RDD 的 4 次转换，action 算子collect 不会触发 RDD 的转换生成。所以在这里 groupByKey 操作涉及到 shuffle。由此 shuffle 之前的操作会作为一个 stage 来处理。最终划分的 stage 结果如下</p>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3woz9wg5j30ex0690uu.jpg"></p>
+<p>Task Scheduler 会接受各个 stage 阶段划分的 task 并分发到 executor 中运行。一个 stage 阶段 task 的运行必须等待上一个 stage 阶段的 task 全部运行完。因为下一阶段的第一个转换一定是重新组织数据的，所以必须等当前阶段所有结果数据都计算出来了才能继续。</p>
+
+        <h2 id="Spark-3-X-展望"   >
+          <a href="#Spark-3-X-展望" class="heading-link"><i class="fas fa-link"></i></a>Spark 3.X 展望</h2>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd3wq5tungj30u00gy751.jpg"></p>
+<p>Spark 将支持 Stage 级别的资源控制和调度。目前 Spark 支持对 executor 资源的控制，但是往往一个 spark 作业分为几个 Stage 阶段，每个阶段用到的资源也是不一样的。支持 Stage 细粒度界别的资源控制有助于我们更好的控制集群资源。详情见 SPARK-27495</p>
+<p>Spark Continuous Processing 模块</p>
+<p>Spark Delta Lake </p>
+<p>Spark SQL 对事物的处理，支持 CURD。</p>
+
+        <h2 id="本文参考"   >
+          <a href="#本文参考" class="heading-link"><i class="fas fa-link"></i></a>本文参考</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://juejin.im/post/6844903558622494733" >Spark 简介</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/aaf17d15/">https://timemachine.icu/posts/aaf17d15/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Spark/">Spark</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/f6ce126b/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Dataset - Structured Query with Data Encoder</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/f3423d06/"><span class="paginator-prev__text">SparkSession - The Entry Point to Spark SQL</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E7%90%86%E5%BF%B5"><span class="toc-number">2.</span> <span class="toc-text">
+          基本理念</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#RDD"><span class="toc-number">2.1.</span> <span class="toc-text">
+          RDD</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DataSet-DataFrame"><span class="toc-number">2.2.</span> <span class="toc-text">
+          DataSet&#x2F;DataFrame</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Task"><span class="toc-number">2.3.</span> <span class="toc-text">
+          Task</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Job"><span class="toc-number">2.4.</span> <span class="toc-text">
+          Job</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Stage"><span class="toc-number">2.5.</span> <span class="toc-text">
+          Stage</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Partition"><span class="toc-number">2.6.</span> <span class="toc-text">
+          Partition</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Shuffle"><span class="toc-number">2.7.</span> <span class="toc-text">
+          Shuffle</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#NarrowDependency"><span class="toc-number">2.8.</span> <span class="toc-text">
+          NarrowDependency</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ShuffleDependency"><span class="toc-number">2.9.</span> <span class="toc-text">
+          ShuffleDependency</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DAG"><span class="toc-number">2.10.</span> <span class="toc-text">
+          DAG</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">3.</span> <span class="toc-text">
+          使用场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84"><span class="toc-number">4.</span> <span class="toc-text">
+          架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-%E7%BC%96%E7%A8%8B%E6%A8%A1%E5%9E%8B"><span class="toc-number">5.</span> <span class="toc-text">
+          Spark 编程模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9E%8B"><span class="toc-number">6.</span> <span class="toc-text">
+          Spark 计算模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B%E5%8F%8A%E7%89%B9%E7%82%B9"><span class="toc-number">7.</span> <span class="toc-text">
+          Spark 运行流程及特点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">7.1.</span> <span class="toc-text">
+          运行流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%89%B9%E7%82%B9"><span class="toc-number">7.2.</span> <span class="toc-text">
+          特点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RDD-%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">8.</span> <span class="toc-text">
+          RDD 运行流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Spark-3-X-%E5%B1%95%E6%9C%9B"><span class="toc-number">9.</span> <span class="toc-text">
+          Spark 3.X 展望</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AC%E6%96%87%E5%8F%82%E8%80%83"><span class="toc-number">10.</span> <span class="toc-text">
+          本文参考</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/aaf17d15/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/aaf17d15/';
+        this.page.identifier = 'posts/aaf17d15/';
+        this.page.title = 'Spark简介';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

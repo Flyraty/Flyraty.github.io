@@ -1,0 +1,692 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言一周前手贱，spark.write.mode(&quot;overwrite&quot;).save(&quot;xxx&quot;) 覆盖了家目录，导致大部分代码和博客源文件被删除，mac 的个性化配置基本上也都没了，欲哭无泪，生活还要继续。一切从头再来吧，本文记录重新搭建博客的过程，踩坑甚多（主要是 next 7.x 相比以前的版本更改了很多配置项）。本文主要参考了 小丁的博客。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hexo + github pages 打造你自己的博客">
+<meta property="og:url" content="https://timemachine.icu/posts/c5404504/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言一周前手贱，spark.write.mode(&quot;overwrite&quot;).save(&quot;xxx&quot;) 覆盖了家目录，导致大部分代码和博客源文件被删除，mac 的个性化配置基本上也都没了，欲哭无泪，生活还要继续。一切从头再来吧，本文记录重新搭建博客的过程，踩坑甚多（主要是 next 7.x 相比以前的版本更改了很多配置项）。本文主要参考了 小丁的博客。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-09-07T06:27:36.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="hexo">
+<meta name="twitter:card" content="summary"><title>hexo + github pages 打造你自己的博客 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/c5404504/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">hexo + github pages 打造你自己的博客</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-09-07</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">2.4k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">19分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>一周前手贱，<code>spark.write.mode(&quot;overwrite&quot;).save(&quot;xxx&quot;)</code> 覆盖了家目录，导致大部分代码和博客源文件被删除，mac 的个性化配置基本上也都没了，欲哭无泪，生活还要继续。一切从头再来吧，本文记录重新搭建博客的过程，踩坑甚多（主要是 next 7.x 相比以前的版本更改了很多配置项）。本文主要参考了 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://tding.top/" >小丁的博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。</p>
+<a id="more"></a>
+<p>tips: 强烈建议大家一定要备份，备份，备份！</p>
+
+        <h3 id="hexo"   >
+          <a href="#hexo" class="heading-link"><i class="fas fa-link"></i></a>hexo</h3>
+      
+        <h4 id="hexo-安装"   >
+          <a href="#hexo-安装" class="heading-link"><i class="fas fa-link"></i></a>hexo 安装</h4>
+      <p>创建 github pages 和创建普通的 github 仓库没太大区别（记住仓库名称是 username.github.io 就行了），这里就不在赘述了。以下的安装基于 mac，其实都差不多，现在的操作系统都提供了良好的包管理工具用于简化软件的安装。</p>
+<ul>
+<li>安装 node 和 npm<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install node</span><br></pre></td></tr></table></div></figure>
+如果你想安装其他版本的 node，可以使用 <code>brew search node</code> ，找到对应的版本包然后安装。</li>
+<li>安装 hexo <figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></div></figure></li>
+<li>hexo init<br>hexo 初始化并自动创建博客目录，根据提示，初始化完成后，进入到博客目录，执行 <code>npm install</code><figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init Flyraty.github.io</span><br></pre></td></tr></table></div></figure></li>
+<li>常用命令<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">hexo d -g 生成并部署</span><br><span class="line">hexo s 本地部署</span><br><span class="line">hexo g 生成站点</span><br><span class="line">hexo clean</span><br><span class="line">hexo new 新建文章</span><br></pre></td></tr></table></div></figure>
+
+</li>
+</ul>
+
+        <h4 id="基础配置"   >
+          <a href="#基础配置" class="heading-link"><i class="fas fa-link"></i></a>基础配置</h4>
+      <p>一下是一些基础配置，主题选择，页面布局等，我们只需要记住两个配置文件就行了。</p>
+<ul>
+<li>站点配置文件 <code>_config.yml</code></li>
+<li>主题配置文件 <code>themes/主题名/_config.yml</code>，我这里就是 <code>themes/next/_config.yml</code></li>
+</ul>
+
+        <h5 id="next-安装"   >
+          <a href="#next-安装" class="heading-link"><i class="fas fa-link"></i></a>next 安装</h5>
+      <p>下载解压放入 themes 目录或者 git clone。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;iissnan&#x2F;hexo-theme-next themes&#x2F;next</span><br></pre></td></tr></table></div></figure>
+<p>推荐 git 的方式，可以持续跟进更新 next。也可以用 git submoudle 维护。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git stash</span><br><span class="line">git pull</span><br><span class="line">git stash pop</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="启用-next"   >
+          <a href="#启用-next" class="heading-link"><i class="fas fa-link"></i></a>启用 next</h5>
+      <p>编辑站点配置文件，修改 theme 选项。</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="更换-Schema"   >
+          <a href="#更换-Schema" class="heading-link"><i class="fas fa-link"></i></a>更换 Schema</h5>
+      <p>next 主题同样有好几种模板，这里选用的是 Gemini，因为文章间的界限比较清晰。</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Schemes</span></span><br><span class="line"><span class="comment">#scheme: Muse</span></span><br><span class="line"><span class="comment">#scheme: Mist</span></span><br><span class="line"><span class="comment">#scheme: Pisces</span></span><br><span class="line"><span class="attr">scheme:</span> <span class="string">Gemini</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h5 id="新建标签，分类，关于页面"   >
+          <a href="#新建标签，分类，关于页面" class="heading-link"><i class="fas fa-link"></i></a>新建标签，分类，关于页面</h5>
+      <p>会在 source 目录下生成对应的文件夹。这几个页面也是 markdown 文件，你可以自由编辑，比如关于页面。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo new page tag</span><br><span class="line">hexo new page categories</span><br><span class="line">hexo new page about</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="设置站点语言"   >
+          <a href="#设置站点语言" class="heading-link"><i class="fas fa-link"></i></a>设置站点语言</h5>
+      <p>修改站点配置文件，如果你发现配置不管用的话，可以查看下 <code>themes/next/languages</code> 目录，看下是否存在 zh-Hans.yml 或者 zh-CN.yml。如果只存在 zh-CN.yml，重命名成 zh-Hans.yml 即可。</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">language:</span> <span class="string">zh-Hans</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="设置侧边栏菜单"   >
+          <a href="#设置侧边栏菜单" class="heading-link"><i class="fas fa-link"></i></a>设置侧边栏菜单</h5>
+      <p>修改主题配置文件，想显示哪个菜单，把对应的注释去掉就行。</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">menu:</span></span><br><span class="line">  <span class="attr">home:</span> <span class="string">/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-home</span></span><br><span class="line">  <span class="attr">about:</span> <span class="string">/about/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-user</span></span><br><span class="line">  <span class="attr">tags:</span> <span class="string">/tags</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-tags</span></span><br><span class="line">  <span class="attr">categories:</span> <span class="string">/categories</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-th</span></span><br><span class="line">  <span class="attr">archives:</span> <span class="string">/archives</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-archive</span></span><br><span class="line">  <span class="comment">#schedule: /schedule/ || fa fa-calendar</span></span><br><span class="line">  <span class="comment">#sitemap: /sitemap.xml || fa fa-sitemap</span></span><br><span class="line">  <span class="comment">#commonweal: /404/ || fa fa-heartbeat</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="侧栏位置"   >
+          <a href="#侧栏位置" class="heading-link"><i class="fas fa-link"></i></a>侧栏位置</h5>
+      <p>修改主题配置文件</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">sidebar:</span></span><br><span class="line">  <span class="comment"># Sidebar Position.</span></span><br><span class="line">  <span class="attr">position:</span> <span class="string">left</span></span><br><span class="line">  <span class="comment">#position: right</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="头像"   >
+          <a href="#头像" class="heading-link"><i class="fas fa-link"></i></a>头像</h5>
+      <p>修改主题配置文件，可以选择是否圆框，是否鼠标点击头像旋转。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Sidebar Avatar</span><br><span class="line">avatar:</span><br><span class="line">  # Replace the default image and set the url here.</span><br><span class="line">  url: https:&#x2F;&#x2F;avatars2.githubusercontent.com&#x2F;u&#x2F;24888835?s&#x3D;400&amp;u&#x3D;20f46b828b9ee5d5a93dfce95ec7c01d07cff6cf&amp;v&#x3D;4</span><br><span class="line">  # If true, the avatar will be dispalyed in circle.</span><br><span class="line">  rounded: true</span><br><span class="line">  # If true, the avatar will be rotated with the cursor.</span><br><span class="line">  rotated: true</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="站点描述"   >
+          <a href="#站点描述" class="heading-link"><i class="fas fa-link"></i></a>站点描述</h5>
+      <p>修改站点配置文件，主要是站点名称，描述，关键字，作者这些</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Site</span></span><br><span class="line"><span class="attr">title:</span> <span class="string">TimeMachine</span> <span class="string">Notes</span></span><br><span class="line"><span class="attr">subtitle:</span> <span class="string">&#x27;愿一直遇到有趣的人和事&#x27;</span></span><br><span class="line"><span class="attr">descriptin:</span> <span class="string">&#x27;于离别之朝束起约定之花&#x27;</span></span><br><span class="line"><span class="attr">keywords:</span> <span class="string">大数据,bigdata,Mac,Linux,生活,life</span></span><br><span class="line"><span class="attr">author:</span> <span class="string">时光机</span></span><br><span class="line"><span class="attr">language:</span> <span class="string">zh-Hans</span></span><br><span class="line"><span class="attr">timezone:</span> <span class="string">Asia/shanghai</span></span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="开启阅读数，字数统计"   >
+          <a href="#开启阅读数，字数统计" class="heading-link"><i class="fas fa-link"></i></a>开启阅读数，字数统计</h5>
+      <p>修改主题配置文件</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Post wordcount display settings</span><br><span class="line"># Dependencies: https:&#x2F;&#x2F;github.com&#x2F;theme-next&#x2F;hexo-symbols-count-time</span><br><span class="line">symbols_count_time:</span><br><span class="line">  separated_meta: true</span><br><span class="line">  item_text_post: true</span><br><span class="line">  item_text_total: false</span><br><span class="line">  awl: 4</span><br><span class="line">  wpm: 275</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="不蒜子统计"   >
+          <a href="#不蒜子统计" class="heading-link"><i class="fas fa-link"></i></a>不蒜子统计</h5>
+      <p>添加站点统计，比如 uv，pv 这些，可以选择百度统计，谷歌统计，不蒜字等。可以参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://theme-next.iissnan.com/third-party-services.html" >官方文档</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。这里选用了不蒜子<br>修改主题配置文件</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">busuanzi_count:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">total_visitors:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">total_visitors_icon:</span> <span class="string">fa</span> <span class="string">fa-user</span></span><br><span class="line">  <span class="attr">total_views:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">total_views_icon:</span> <span class="string">fa</span> <span class="string">fa-eye</span></span><br><span class="line">  <span class="attr">post_views:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">post_views_icon:</span> <span class="string">fa</span> <span class="string">fa-eye</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="添加搜索栏"   >
+          <a href="#添加搜索栏" class="heading-link"><i class="fas fa-link"></i></a>添加搜索栏</h5>
+      <p>安装搜索插件</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>修改站点配置文件，添加 search 配置</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># search</span></span><br><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br><span class="line">  <span class="attr">limit:</span> <span class="number">10000</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="RSS-订阅"   >
+          <a href="#RSS-订阅" class="heading-link"><i class="fas fa-link"></i></a>RSS 订阅</h5>
+      <p>安装插件</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-feed --save</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>修改站点配置文件，添加以下内容</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># RSS</span><br><span class="line"># feed</span><br><span class="line"># Dependencies: https:&#x2F;&#x2F;github.com&#x2F;hexojs&#x2F;hexo-generator-feed</span><br><span class="line">feed:</span><br><span class="line">  type: atom</span><br><span class="line">  path: atom.xml</span><br><span class="line">  limit: 20</span><br><span class="line">  hub:</span><br><span class="line">  content:</span><br></pre></td></tr></table></div></figure>
+<p>修改主题配置文件</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">follow_me:</span><br><span class="line">  #Twitter: https:&#x2F;&#x2F;twitter.com&#x2F;username || fab fa-twitter</span><br><span class="line">  #Telegram: https:&#x2F;&#x2F;t.me&#x2F;channel_name || fab fa-telegram</span><br><span class="line">  #WeChat: &#x2F;images&#x2F;wechat_channel.jpg || fab fa-weixin</span><br><span class="line">  RSS: &#x2F;atom.xml || fa fa-rss</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="相关文章"   >
+          <a href="#相关文章" class="heading-link"><i class="fas fa-link"></i></a>相关文章</h5>
+      <p>安装插件</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-related-popular-posts --save</span><br></pre></td></tr></table></div></figure>
+<p>修改主题配置文件</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">related_posts:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">title:</span> <span class="string">相关文章推荐#</span> <span class="string">Custom</span> <span class="string">header,</span> <span class="string">leave</span> <span class="string">empty</span> <span class="string">to</span> <span class="string">use</span> <span class="string">the</span> <span class="string">default</span> <span class="string">one</span></span><br><span class="line">  <span class="attr">display_in_home:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">params:</span></span><br><span class="line">    <span class="attr">maxCount:</span> <span class="number">5</span></span><br><span class="line">    <span class="comment">#PPMixingRate: 0.0</span></span><br><span class="line">    <span class="comment">#isDate: false</span></span><br><span class="line">    <span class="comment">#isImage: false</span></span><br><span class="line">    <span class="attr">isExcerpt:</span> <span class="string">fals</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="社交地址"   >
+          <a href="#社交地址" class="heading-link"><i class="fas fa-link"></i></a>社交地址</h5>
+      <p>修改主题配置文件，用自带的图标其实就可以了</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">social:</span></span><br><span class="line">  <span class="attr">GitHub:</span> <span class="string">https://github.com/Flyraty</span> <span class="string">||</span> <span class="string">fab</span> <span class="string">fa-github</span></span><br><span class="line">  <span class="attr">Zhihu:</span> <span class="string">https://www.zhihu.com/people/zhang-hai-liang-83-28</span> <span class="string">||</span> <span class="string">fab</span> <span class="string">fa-zhihu</span></span><br><span class="line">  <span class="attr">E-Mail:</span> <span class="string">139hailiangabc@gmail.com</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-envelope</span></span><br><span class="line">  <span class="attr">Weibo:</span> <span class="string">https://weibo.com/yourname</span> <span class="string">||</span> <span class="string">fab</span> <span class="string">fa-weibo</span></span><br><span class="line">  <span class="comment">#Google: https://plus.google.com/yourname || fab fa-google</span></span><br><span class="line">  <span class="comment">#Twitter: https://twitter.com/yourname || fab fa-twitter</span></span><br><span class="line">  <span class="comment">#FB Page: https://www.facebook.com/yourname || fab fa-facebook</span></span><br><span class="line">  <span class="comment">#StackOverflow: https://stackoverflow.com/yourname || fab fa-stack-overflow</span></span><br><span class="line">  <span class="comment">#YouTube: https://youtube.com/yourname || fab fa-youtube</span></span><br><span class="line">  <span class="comment">#Instagram: https://instagram.com/yourname || fab fa-instagram</span></span><br><span class="line">  <span class="comment">#Skype: skype:yourname?call|chat || fab fa-skype</span></span><br><span class="line"></span><br><span class="line"><span class="attr">social_icons:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">icons_only:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">transition:</span> <span class="literal">false</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="自动生成摘要"   >
+          <a href="#自动生成摘要" class="heading-link"><i class="fas fa-link"></i></a>自动生成摘要</h5>
+      <p>自动生成摘要在 next7 中被去除掉了。不想显示全文的话，有两种方式控制，建议第一种方式</p>
+<ul>
+<li><code>&lt;!--more--&gt;</code>，会显示之前的内容，之后的内容不会显示</li>
+<li>文章 meta 中添加 description字段<br>不要在设置啥 auto_encrypt 了。。。</li>
+</ul>
+
+        <h5 id="添加-Disqus-评论系统"   >
+          <a href="#添加-Disqus-评论系统" class="heading-link"><i class="fas fa-link"></i></a>添加 Disqus 评论系统</h5>
+      <p>访问 <code>disqus.com</code>，选择 <code>i want to install disqus on my site</code>。然后跟着提示一步步走，只需要记住自己的 shortname 即可。<br>修改主题配置文件</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> <span class="string">Disqus</span></span><br><span class="line"><span class="attr">disqus:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">shortname:</span> <span class="string">flyraty</span></span><br><span class="line">  <span class="attr">count:</span> <span class="literal">true</span></span><br><span class="line">  <span class="comment">#post_meta_order: 0</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h5 id="部署到-git"   >
+          <a href="#部署到-git" class="heading-link"><i class="fas fa-link"></i></a>部署到 git</h5>
+      <p>安装插件</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></div></figure>
+<p>修改站点配置文件，部署站点，如果你以前没有使用过 git 的话，最好配置下 SSH</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  - type: git</span><br><span class="line">    repo: git@github.com:Flyraty&#x2F;Flyraty.github.io.git</span><br><span class="line">    branch: master</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>直接 <code>hexo d -g</code> 并不会把你的博客源文件，比如文章 markdown push 到仓库，只是生成 public 下的静态 html push 到了站点进行渲染。此处建议新开一分支 hexo ，push 站点源文件到 hexo 分之上用于备份，可以把 hexo 分支设置为默认分支。</p>
+
+        <h4 id="美化"   >
+          <a href="#美化" class="heading-link"><i class="fas fa-link"></i></a>美化</h4>
+      
+        <h5 id="代码框风格，并添加复制按钮"   >
+          <a href="#代码框风格，并添加复制按钮" class="heading-link"><i class="fas fa-link"></i></a>代码框风格，并添加复制按钮</h5>
+      <p>修改主题配置文件，设置 theme 和 style</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">codeblock:</span></span><br><span class="line">  <span class="comment"># Code Highlight theme</span></span><br><span class="line">  <span class="comment"># Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic</span></span><br><span class="line">  <span class="comment"># See: https://github.com/chriskempson/tomorrow-theme</span></span><br><span class="line">  <span class="attr">highlight_theme:</span> <span class="string">night</span></span><br><span class="line">  <span class="comment"># Add copy button on codeblock</span></span><br><span class="line">  <span class="attr">copy_button:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="comment"># Show text copy result.</span></span><br><span class="line">    <span class="attr">show_result:</span> <span class="literal">true</span></span><br><span class="line">    <span class="comment"># Available values: default | flat | mac</span></span><br><span class="line">    <span class="attr">style:</span> <span class="string">mac</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="动态背景图片"   >
+          <a href="#动态背景图片" class="heading-link"><i class="fas fa-link"></i></a>动态背景图片</h5>
+      <p>新建 source/_date/styles.styl，添加如下代码，如果想要设置动态背景效果，只需要将 <code>background:url</code>替换成一个动态背景接口就行了。<br>设置了背景图片，可能会导致文字看不到，所以需要设置透明度。<br>tips: 推荐图片网址 <code>https://wallhaven.cc/</code></p>
+<details>
+    <summary>styles.styl</summary>>
+    <figure class="highlight css"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">// 设置背景图片</span><br><span class="line"><span class="selector-tag">body</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>:<span class="built_in">url</span>(/images/girl.jpg);</span><br><span class="line">    <span class="attribute">background-repeat</span>: no-repeat;</span><br><span class="line">    background-attachment:fixed; //不重复</span><br><span class="line">    background-size: cover;      //填充</span><br><span class="line">    <span class="selector-tag">background-position</span><span class="selector-pseudo">:50</span>% 50%;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//博客内容透明化</span><br><span class="line">//文章内容的透明度设置</span><br><span class="line"><span class="selector-class">.content-wrap</span> &#123;</span><br><span class="line">  <span class="attribute">opacity</span>: <span class="number">0.9</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//侧边框的透明度设置</span><br><span class="line"><span class="selector-class">.sidebar</span> &#123;</span><br><span class="line">  <span class="attribute">opacity</span>: <span class="number">0.9</span>;</span><br><span class="line">&#125;</span><br><span class="line">//菜单栏的透明度设置</span><br><span class="line"><span class="selector-class">.header-inner</span> &#123;</span><br><span class="line">  <span class="attribute">background</span>: <span class="built_in">rgba</span>(<span class="number">255</span>,<span class="number">255</span>,<span class="number">255</span>,<span class="number">0.9</span>);</span><br><span class="line">&#125;</span><br><span class="line">//搜索框（local-search）的透明度设置</span><br><span class="line"><span class="selector-class">.popup</span> &#123;</span><br><span class="line">  <span class="attribute">opacity</span>: <span class="number">0.9</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+</details>
+
+<p>修改主题配置文件，打开自定义 styles.styl 设置</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">custom_file_path:</span></span><br><span class="line">	<span class="attr">style:</span> <span class="string">source/_data/styles.sty</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h5 id="页面动画效果"   >
+          <a href="#页面动画效果" class="heading-link"><i class="fas fa-link"></i></a>页面动画效果</h5>
+      <p>hexo 内置了一些页面动态效果。如果想打开的话，只需要在主题配置文件里搜索打开即可。</p>
+<ul>
+<li>canvas_nest</li>
+<li>canvas_ribbon</li>
+<li>three_waves </li>
+</ul>
+<p>比如 canvas_nest</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Canvas-nest</span></span><br><span class="line"><span class="comment"># Dependencies: https://github.com/theme-next/theme-next-canvas-nest</span></span><br><span class="line"><span class="attr">canvas_nest:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">onmobile:</span> <span class="literal">true</span> <span class="comment"># display on mobile or not</span></span><br><span class="line">  <span class="attr">color:</span> <span class="string">&quot;0,0,255&quot;</span> <span class="comment"># RGB values, use &#x27;,&#x27; to separate</span></span><br><span class="line">  <span class="attr">opacity:</span> <span class="number">0.5</span> <span class="comment"># the opacity of line: 0~1</span></span><br><span class="line">  <span class="attr">zIndex:</span> <span class="number">-1</span> <span class="comment"># z-index property of the background</span></span><br><span class="line">  <span class="attr">count:</span> <span class="number">99</span> <span class="comment"># the number of lines</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h5 id="页面顶部加载阅读进度条"   >
+          <a href="#页面顶部加载阅读进度条" class="heading-link"><i class="fas fa-link"></i></a>页面顶部加载阅读进度条</h5>
+      <p>修改主题配置文件</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Reading progress bar</span></span><br><span class="line"><span class="attr">reading_progress:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="comment"># Available values: top | bottom</span></span><br><span class="line">  <span class="attr">position:</span> <span class="string">top</span></span><br><span class="line">  <span class="attr">color:</span> <span class="string">&quot;#37c6c0&quot;</span></span><br><span class="line">  <span class="attr">height:</span> <span class="string">3px</span></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="文章阅读进度条"   >
+          <a href="#文章阅读进度条" class="heading-link"><i class="fas fa-link"></i></a>文章阅读进度条</h5>
+      <p>安装插件</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-cake-moon-menu --save</span><br></pre></td></tr></table></div></figure>
+<p>修改主题配置文件，添加如下内容</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">moon_menu:</span></span><br><span class="line">  <span class="attr">back2top:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">icon:</span> <span class="string">fa</span> <span class="string">fa-chevron-up</span></span><br><span class="line">    <span class="attr">func:</span> <span class="string">back2top</span></span><br><span class="line">    <span class="attr">order:</span> <span class="number">-1</span></span><br><span class="line">  <span class="attr">back2bottom:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">icon:</span> <span class="string">fa</span> <span class="string">fa-chevron-down</span></span><br><span class="line">    <span class="attr">func:</span> <span class="string">back2bottom</span></span><br><span class="line">    <span class="attr">order:</span> <span class="number">-2</span></span><br></pre></td></tr></table></div></figure>
+<p>next  自带了文章阅读进度条（pace 配置），但是不如这个插件好看。</p>
+
+        <h5 id="鼠标点击烟花效果"   >
+          <a href="#鼠标点击烟花效果" class="heading-link"><i class="fas fa-link"></i></a>鼠标点击烟花效果</h5>
+      <p>参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://tding.top/archives/58cff12b.html" >小丁的博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h5 id="修改页面布局为圆角"   >
+          <a href="#修改页面布局为圆角" class="heading-link"><i class="fas fa-link"></i></a>修改页面布局为圆角</h5>
+      <p>新建 source/_data/variables.styl</p>
+<figure class="highlight"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// 圆角设置</span><br><span class="line">$border-radius-inner     = 20px 20px 20px 20px;</span><br><span class="line">$border-radius           = 20px;</span><br></pre></td></tr></table></div></figure>
+<p>修改主题配置文件，打开自定义 variables.styl 的设置</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">custom_file_path:</span></span><br><span class="line">	<span class="attr">variable:</span> <span class="string">source/_data/variables.sty</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h5 id="添加粒子时钟"   >
+          <a href="#添加粒子时钟" class="heading-link"><i class="fas fa-link"></i></a>添加粒子时钟</h5>
+      <p>参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://tding.top/archives/dd68b70.html" >小丁的博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h5 id="去掉底部·强力驱动·"   >
+          <a href="#去掉底部·强力驱动·" class="heading-link"><i class="fas fa-link"></i></a>去掉底部·强力驱动·</h5>
+      <p>修改主题配置文件</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">footer:</span><br><span class="line">	power: false</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="关于页面显示-github-commit-chart"   >
+          <a href="#关于页面显示-github-commit-chart" class="heading-link"><i class="fas fa-link"></i></a>关于页面显示 github commit chart</h5>
+      <p>参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://tding.top/" >小丁的博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h4 id="优化加速"   >
+          <a href="#优化加速" class="heading-link"><i class="fas fa-link"></i></a>优化加速</h4>
+      
+        <h5 id="启用-FastClick"   >
+          <a href="#启用-FastClick" class="heading-link"><i class="fas fa-link"></i></a>启用 FastClick</h5>
+      <p>修改主题配置文件</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fastclick: true</span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="启用-QuickLink"   >
+          <a href="#启用-QuickLink" class="heading-link"><i class="fas fa-link"></i></a>启用 QuickLink</h5>
+      <p>修改主题配置文件，quickclick 用于资源文件的预加载</p>
+<figure class="highlight yml"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">quicklink:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Home page and archive page can be controlled through home and archive options below.</span></span><br><span class="line">  <span class="comment"># This configuration item is independent of `enable`.</span></span><br><span class="line">  <span class="attr">home:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">archive:</span> <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Default (true) will initialize quicklink after the load event fires.</span></span><br><span class="line">  <span class="attr">delay:</span> <span class="literal">true</span></span><br><span class="line">  <span class="comment"># Custom a time in milliseconds by which the browser must execute prefetching.</span></span><br><span class="line">  <span class="attr">timeout:</span> <span class="number">3000</span></span><br><span class="line">  <span class="comment"># Default (true) will enable fetch() or falls back to XHR.</span></span><br><span class="line">  <span class="attr">priority:</span> <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># For more flexibility you can add some patterns (RegExp, Function, or Array) to ignores.</span></span><br><span class="line">  <span class="comment"># See: https://github.com/GoogleChromeLabs/quicklink#custom-ignore-patterns</span></span><br><span class="line">  <span class="attr">ignores:</span></span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+
+        <h5 id="SEO"   >
+          <a href="#SEO" class="heading-link"><i class="fas fa-link"></i></a>SEO</h5>
+      <p>主要就是生成站点地图并提交百度和谷歌收录，生成永久链接，参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://flyraty.github.io/posts/cfd1b897/" >https://flyraty.github.io/posts/cfd1b897/</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h3 id="参考"   >
+          <a href="#参考" class="heading-link"><i class="fas fa-link"></i></a>参考</h3>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://tding.top/" >小丁的博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/c5404504/">https://timemachine.icu/posts/c5404504/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/hexo/">hexo</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/ec25acc0/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Iterm2 美化</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/2305d870/"><span class="paginator-prev__text">碰到的一些精彩文章</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#hexo"><span class="toc-number">2.</span> <span class="toc-text">
+          hexo</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#hexo-%E5%AE%89%E8%A3%85"><span class="toc-number">2.1.</span> <span class="toc-text">
+          hexo 安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E9%85%8D%E7%BD%AE"><span class="toc-number">2.2.</span> <span class="toc-text">
+          基础配置</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#next-%E5%AE%89%E8%A3%85"><span class="toc-number">2.2.1.</span> <span class="toc-text">
+          next 安装</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%90%AF%E7%94%A8-next"><span class="toc-number">2.2.2.</span> <span class="toc-text">
+          启用 next</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9B%B4%E6%8D%A2-Schema"><span class="toc-number">2.2.3.</span> <span class="toc-text">
+          更换 Schema</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%96%B0%E5%BB%BA%E6%A0%87%E7%AD%BE%EF%BC%8C%E5%88%86%E7%B1%BB%EF%BC%8C%E5%85%B3%E4%BA%8E%E9%A1%B5%E9%9D%A2"><span class="toc-number">2.2.4.</span> <span class="toc-text">
+          新建标签，分类，关于页面</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E7%AB%99%E7%82%B9%E8%AF%AD%E8%A8%80"><span class="toc-number">2.2.5.</span> <span class="toc-text">
+          设置站点语言</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E4%BE%A7%E8%BE%B9%E6%A0%8F%E8%8F%9C%E5%8D%95"><span class="toc-number">2.2.6.</span> <span class="toc-text">
+          设置侧边栏菜单</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BE%A7%E6%A0%8F%E4%BD%8D%E7%BD%AE"><span class="toc-number">2.2.7.</span> <span class="toc-text">
+          侧栏位置</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%A4%B4%E5%83%8F"><span class="toc-number">2.2.8.</span> <span class="toc-text">
+          头像</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%AB%99%E7%82%B9%E6%8F%8F%E8%BF%B0"><span class="toc-number">2.2.9.</span> <span class="toc-text">
+          站点描述</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%BC%80%E5%90%AF%E9%98%85%E8%AF%BB%E6%95%B0%EF%BC%8C%E5%AD%97%E6%95%B0%E7%BB%9F%E8%AE%A1"><span class="toc-number">2.2.10.</span> <span class="toc-text">
+          开启阅读数，字数统计</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%B8%8D%E8%92%9C%E5%AD%90%E7%BB%9F%E8%AE%A1"><span class="toc-number">2.2.11.</span> <span class="toc-text">
+          不蒜子统计</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E6%90%9C%E7%B4%A2%E6%A0%8F"><span class="toc-number">2.2.12.</span> <span class="toc-text">
+          添加搜索栏</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RSS-%E8%AE%A2%E9%98%85"><span class="toc-number">2.2.13.</span> <span class="toc-text">
+          RSS 订阅</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E6%96%87%E7%AB%A0"><span class="toc-number">2.2.14.</span> <span class="toc-text">
+          相关文章</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%A4%BE%E4%BA%A4%E5%9C%B0%E5%9D%80"><span class="toc-number">2.2.15.</span> <span class="toc-text">
+          社交地址</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90%E6%91%98%E8%A6%81"><span class="toc-number">2.2.16.</span> <span class="toc-text">
+          自动生成摘要</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0-Disqus-%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F"><span class="toc-number">2.2.17.</span> <span class="toc-text">
+          添加 Disqus 评论系统</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2%E5%88%B0-git"><span class="toc-number">2.2.18.</span> <span class="toc-text">
+          部署到 git</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BE%8E%E5%8C%96"><span class="toc-number">2.3.</span> <span class="toc-text">
+          美化</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E6%A1%86%E9%A3%8E%E6%A0%BC%EF%BC%8C%E5%B9%B6%E6%B7%BB%E5%8A%A0%E5%A4%8D%E5%88%B6%E6%8C%89%E9%92%AE"><span class="toc-number">2.3.1.</span> <span class="toc-text">
+          代码框风格，并添加复制按钮</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%83%8C%E6%99%AF%E5%9B%BE%E7%89%87"><span class="toc-number">2.3.2.</span> <span class="toc-text">
+          动态背景图片</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%A1%B5%E9%9D%A2%E5%8A%A8%E7%94%BB%E6%95%88%E6%9E%9C"><span class="toc-number">2.3.3.</span> <span class="toc-text">
+          页面动画效果</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%A1%B5%E9%9D%A2%E9%A1%B6%E9%83%A8%E5%8A%A0%E8%BD%BD%E9%98%85%E8%AF%BB%E8%BF%9B%E5%BA%A6%E6%9D%A1"><span class="toc-number">2.3.4.</span> <span class="toc-text">
+          页面顶部加载阅读进度条</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%96%87%E7%AB%A0%E9%98%85%E8%AF%BB%E8%BF%9B%E5%BA%A6%E6%9D%A1"><span class="toc-number">2.3.5.</span> <span class="toc-text">
+          文章阅读进度条</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%BC%A0%E6%A0%87%E7%82%B9%E5%87%BB%E7%83%9F%E8%8A%B1%E6%95%88%E6%9E%9C"><span class="toc-number">2.3.6.</span> <span class="toc-text">
+          鼠标点击烟花效果</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E9%A1%B5%E9%9D%A2%E5%B8%83%E5%B1%80%E4%B8%BA%E5%9C%86%E8%A7%92"><span class="toc-number">2.3.7.</span> <span class="toc-text">
+          修改页面布局为圆角</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E7%B2%92%E5%AD%90%E6%97%B6%E9%92%9F"><span class="toc-number">2.3.8.</span> <span class="toc-text">
+          添加粒子时钟</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8E%BB%E6%8E%89%E5%BA%95%E9%83%A8%C2%B7%E5%BC%BA%E5%8A%9B%E9%A9%B1%E5%8A%A8%C2%B7"><span class="toc-number">2.3.9.</span> <span class="toc-text">
+          去掉底部·强力驱动·</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E9%A1%B5%E9%9D%A2%E6%98%BE%E7%A4%BA-github-commit-chart"><span class="toc-number">2.3.10.</span> <span class="toc-text">
+          关于页面显示 github commit chart</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E5%8A%A0%E9%80%9F"><span class="toc-number">2.4.</span> <span class="toc-text">
+          优化加速</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%90%AF%E7%94%A8-FastClick"><span class="toc-number">2.4.1.</span> <span class="toc-text">
+          启用 FastClick</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%90%AF%E7%94%A8-QuickLink"><span class="toc-number">2.4.2.</span> <span class="toc-text">
+          启用 QuickLink</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#SEO"><span class="toc-number">2.4.3.</span> <span class="toc-text">
+          SEO</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">3.</span> <span class="toc-text">
+          参考</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/c5404504/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/c5404504/';
+        this.page.identifier = 'posts/c5404504/';
+        this.page.title = 'hexo + github pages 打造你自己的博客';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

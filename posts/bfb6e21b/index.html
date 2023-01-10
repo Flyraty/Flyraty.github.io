@@ -1,0 +1,597 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言聚合计算对于数据统计有着重要的作用，比如常见的 Top N 问题。本文主要介绍常见的聚合计算函数以及基于 Window 的处理。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Aggregate - 普通的聚合计算和基于 window 的聚合计算">
+<meta property="og:url" content="https://timemachine.icu/posts/bfb6e21b/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言聚合计算对于数据统计有着重要的作用，比如常见的 Top N 问题。本文主要介绍常见的聚合计算函数以及基于 Window 的处理。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rp1yu06j313a0a4mzz.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rptny42j313c0m878r.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rq7b0l6j30zw0jg0wi.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rqjkae3j314q0es41o.jpg">
+<meta property="article:published_time" content="2020-03-26T06:19:54.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.120Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rp1yu06j313a0a4mzz.jpg"><title>Aggregate - 普通的聚合计算和基于 window 的聚合计算 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/bfb6e21b/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Aggregate - 普通的聚合计算和基于 window 的聚合计算</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-03-26</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">2.8k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">25分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>聚合计算对于数据统计有着重要的作用，比如常见的 Top N 问题。本文主要介绍常见的聚合计算函数以及基于 Window 的处理。</p>
+<a id="more"></a>
+
+
+        <h3 id="Basic-Aggregate"   >
+          <a href="#Basic-Aggregate" class="heading-link"><i class="fas fa-link"></i></a>Basic Aggregate</h3>
+      <p>Spark 提供了 groupBy 等聚合操作以及在这些操作的上的聚合函数。聚合操作符其实也就是转换算子，可以在 Dataset.scala RDD.scala 中查看。聚合函数定义在 org.apache.spark.sql.functions 中。函数签名  @group为 agg_funcs。</p>
+<p>在讲转换算子的时候，已经简单提到了 groupBy，groupByKey，agg 这些聚合操作符。可以在回顾一下。</p>
+
+        <h4 id="RelationGroupedDataset-与-KeyValueGroupedDataset"   >
+          <a href="#RelationGroupedDataset-与-KeyValueGroupedDataset" class="heading-link"><i class="fas fa-link"></i></a>RelationGroupedDataset 与 KeyValueGroupedDataset</h4>
+      <p>RelationGroupedDataset 是 DataFrame 聚合计算的接口，groupBy，cube，rollup，pivot 算子会生成 RelationGroupedDataset。其支持的聚合计算函数都定义在 spark-sql 的 RelationGroupedDataset.scala 里面。</p>
+<p>KeyValueGroupedDataset 用于 TypedColumn 的聚合计算，其作用的数据集往往是自定义的 Scala 对象，而不是 Rows。由 groupByKey 算子生成。其支持的聚合计算函数都定义在 spark-sql 的 KeyValueGroupedDataset.scala 里面。</p>
+<p>因为 KeyValueGroupedDataset 处在试验阶段，两者支持的聚合计算函数有些差别，具体可以查看源码。</p>
+
+        <h4 id="groupBy"   >
+          <a href="#groupBy" class="heading-link"><i class="fas fa-link"></i></a>groupBy</h4>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rp1yu06j313a0a4mzz.jpg"></p>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rptny42j313c0m878r.jpg"></p>
+<p>groupBy 就是返回 key 及 key 对应的数据集，不能保证每组有序。因此如果你想保证分组内有序，可能会用到下面的 Window Agg。使用 groupBy 的代价比较大，是先通过 shuffle 将各个 Key 对应的数据拉到各个对应分区下，再进行聚合计算。注释里建议使用 aggregateByKey 或者 reduceByKey。另外 Dataset groupBy 接收的参数是 String 类型。</p>
+<p>aggregateByKey 是先聚合计算，在合并分区，相对来说计算量小，所以性能比较好。接收一个初始值，一个分区内聚合函数，一个分区结果合并函数作为参数。更多使用可以参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gist.github.com/tmcgrath/dd8a0f5fb19201deb65f" >aggreagteByKey</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">val</span> nums = spark.range(<span class="number">10</span>).withColumn(<span class="string">&quot;remainder&quot;</span>, $<span class="string">&quot;id&quot;</span> % <span class="number">2</span>)</span><br><span class="line">nums: org.apache.spark.sql.<span class="type">DataFrame</span> = [id: bigint, remainder: bigint]</span><br><span class="line"></span><br><span class="line">scala&gt; nums.show()</span><br><span class="line">+---+---------+</span><br><span class="line">| id|remainder|</span><br><span class="line">+---+---------+</span><br><span class="line">|  <span class="number">0</span>|        <span class="number">0</span>|</span><br><span class="line">|  <span class="number">1</span>|        <span class="number">1</span>|</span><br><span class="line">|  <span class="number">2</span>|        <span class="number">0</span>|</span><br><span class="line">|  <span class="number">3</span>|        <span class="number">1</span>|</span><br><span class="line">|  <span class="number">4</span>|        <span class="number">0</span>|</span><br><span class="line">|  <span class="number">5</span>|        <span class="number">1</span>|</span><br><span class="line">|  <span class="number">6</span>|        <span class="number">0</span>|</span><br><span class="line">|  <span class="number">7</span>|        <span class="number">1</span>|</span><br><span class="line">|  <span class="number">8</span>|        <span class="number">0</span>|</span><br><span class="line">|  <span class="number">9</span>|        <span class="number">1</span>|</span><br><span class="line">+---+---------+</span><br><span class="line"></span><br><span class="line">scala&gt; scala&gt; nums.agg(sum(<span class="string">&quot;id&quot;</span>)).show()</span><br><span class="line">+-------+</span><br><span class="line">|sum(id)|</span><br><span class="line">+-------+</span><br><span class="line">|     <span class="number">45</span>|</span><br><span class="line">+-------+</span><br><span class="line">scala&gt; nums.groupBy(<span class="string">&quot;remainder&quot;</span>)</span><br><span class="line">res4: org.apache.spark.sql.<span class="type">RelationalGroupedDataset</span> = <span class="type">RelationalGroupedDataset</span>: [grouping expressions: [remainder: bigint], value: [id: bigint, remainder: bigint], <span class="class"><span class="keyword">type</span></span>: <span class="type">GroupBy</span>]</span><br><span class="line"></span><br><span class="line">scala&gt; nums.groupBy(<span class="string">&quot;remainder&quot;</span>).agg(sum(<span class="string">&quot;id&quot;</span>)).show()</span><br><span class="line">+---------+-------+</span><br><span class="line">|remainder|sum(id)|</span><br><span class="line">+---------+-------+</span><br><span class="line">|        <span class="number">0</span>|     <span class="number">20</span>|</span><br><span class="line">|        <span class="number">1</span>|     <span class="number">25</span>|</span><br><span class="line">+---------+-------+</span><br><span class="line"></span><br><span class="line">scala&gt; <span class="keyword">val</span> rdd = sc.parallelize(<span class="type">Seq</span>((<span class="number">1</span>, <span class="number">2</span>), (<span class="number">1</span>, <span class="number">4</span>), (<span class="number">2</span>, <span class="number">5</span>), (<span class="number">2</span>, <span class="number">6</span>)))</span><br><span class="line">rdd: org.apache.spark.rdd.<span class="type">RDD</span>[(<span class="type">Int</span>, <span class="type">Int</span>)] = <span class="type">ParallelCollectionRDD</span>[<span class="number">12</span>] at parallelize at &lt;console&gt;:<span class="number">24</span></span><br><span class="line"></span><br><span class="line">scala&gt; rdd.collect</span><br><span class="line">res19: <span class="type">Array</span>[(<span class="type">Int</span>, <span class="type">Int</span>)] = <span class="type">Array</span>((<span class="number">1</span>,<span class="number">2</span>), (<span class="number">1</span>,<span class="number">4</span>), (<span class="number">2</span>,<span class="number">5</span>), (<span class="number">2</span>,<span class="number">6</span>))</span><br><span class="line"></span><br><span class="line">scala&gt; rdd.aggregateByKey(<span class="number">0</span>)((a, b) =&gt; a + b, (res1, res2) =&gt; res1 +res2).collect</span><br><span class="line">res20: <span class="type">Array</span>[(<span class="type">Int</span>, <span class="type">Int</span>)] = <span class="type">Array</span>((<span class="number">1</span>,<span class="number">6</span>), (<span class="number">2</span>,<span class="number">11</span>))</span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="groupByKey"   >
+          <a href="#groupByKey" class="heading-link"><i class="fas fa-link"></i></a>groupByKey</h4>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rq7b0l6j30zw0jg0wi.jpg"></p>
+<p>groupByKey 还处在试验阶段，接收一个函数作为参数，返回 KeyValueGroupedDataset。想的是让分组的条件可以更加的灵活，不局限于基于列名的分组。比如基于数组里的第几个元素。与 groupBy 一样，是先 shuffle ，在聚合计算。通过下面的代码，我们可以看到 Dataset + groupByKey 后面跟的计算函数比较少，不支持 sum，avg 等。另外还需要注意这里已经是 TypedColumn。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">People</span>(<span class="params">name:<span class="type">String</span>, salary:<span class="type">Int</span></span>)</span></span><br><span class="line"><span class="class"><span class="title">defined</span> <span class="title">class</span> <span class="title">People</span></span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"><span class="title">scala&gt;</span> <span class="title">val</span> <span class="title">ds</span> </span>= <span class="type">Seq</span>(<span class="type">People</span>(<span class="string">&quot;Mike&quot;</span>, <span class="number">1000</span>), <span class="type">People</span>(<span class="string">&quot;Mike&quot;</span>, <span class="number">600</span>), <span class="type">People</span>(<span class="string">&quot;David&quot;</span>, <span class="number">400</span>)).toDS</span><br><span class="line">ds: org.apache.spark.sql.<span class="type">Dataset</span>[<span class="type">People</span>] = [name: string, salary: int]</span><br><span class="line"></span><br><span class="line">scala&gt; ds.groupByKey(_.salary)</span><br><span class="line">res21: org.apache.spark.sql.<span class="type">KeyValueGroupedDataset</span>[<span class="type">Int</span>,<span class="type">People</span>] = <span class="type">KeyValueGroupedDataset</span>: [key: [value: int], value: [name: string, salary: int]]</span><br><span class="line"></span><br><span class="line">scala&gt; ds.groupByKey(_.salary).sum(<span class="string">&quot;salary&quot;</span>).show()</span><br><span class="line">&lt;console&gt;:<span class="number">26</span>: error: value sum is not a member of org.apache.spark.sql.<span class="type">KeyValueGroupedDataset</span>[<span class="type">Int</span>,<span class="type">People</span>]</span><br><span class="line">       ds.groupByKey(_.salary).sum(<span class="string">&quot;salary&quot;</span>).show()</span><br><span class="line"></span><br><span class="line">scala&gt; ds.groupByKey(_.salary).agg(avg(<span class="string">&quot;salary&quot;</span>)).show()</span><br><span class="line">&lt;console&gt;:<span class="number">26</span>: error: <span class="class"><span class="keyword">type</span> <span class="title">mismatch</span></span>;</span><br><span class="line"> found   : org.apache.spark.sql.<span class="type">Column</span></span><br><span class="line"> required: org.apache.spark.sql.<span class="type">TypedColumn</span>[<span class="type">People</span>,?]</span><br><span class="line">       ds.groupByKey(_.salary).agg(avg(<span class="string">&quot;salary&quot;</span>)).show()</span><br><span class="line"></span><br><span class="line">scala&gt; <span class="keyword">import</span> org.apache.spark.sql.expressions.scalalang._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.expressions.scalalang._</span><br><span class="line"></span><br><span class="line">scala&gt; ds.groupByKey(_.name).agg(typed.avg[<span class="type">People</span>](_.salary)).show()</span><br><span class="line">+-----+------------------------------------------+</span><br><span class="line">|value|<span class="type">TypedAverage</span>($line43.$read$$iw$$iw$<span class="type">People</span>)|</span><br><span class="line">+-----+------------------------------------------+</span><br><span class="line">| <span class="type">Mike</span>|                                     <span class="number">800.0</span>|</span><br><span class="line">|<span class="type">David</span>|                                     <span class="number">400.0</span>|</span><br><span class="line">+-----+------------------------------------------+</span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="agg"   >
+          <a href="#agg" class="heading-link"><i class="fas fa-link"></i></a>agg</h4>
+      <p>agg 一般作用于分组后的数据集上，也可以作用于整个数据集上。其具体的方法可以查看 spakr-sql Dataset.scala。agg 可以接收 map，expression 类型的参数。直接看例子吧</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; nums.groupBy(<span class="string">&quot;remainder&quot;</span>).agg(<span class="type">Map</span>(<span class="string">&quot;id&quot;</span> -&gt; <span class="string">&quot;sum&quot;</span>)).show()</span><br><span class="line">+---------+-------+</span><br><span class="line">|remainder|sum(id)|</span><br><span class="line">+---------+-------+</span><br><span class="line">|        <span class="number">0</span>|     <span class="number">20</span>|</span><br><span class="line">|        <span class="number">1</span>|     <span class="number">25</span>|</span><br><span class="line">+---------+-------+</span><br><span class="line"></span><br><span class="line">scala&gt; nums.groupBy(<span class="string">&quot;remainder&quot;</span>).agg(sum(<span class="string">&quot;id&quot;</span>).alias(<span class="string">&quot;sum&quot;</span>), avg(<span class="string">&quot;id&quot;</span>).alias(<span class="string">&quot;avg&quot;</span>)).show()</span><br><span class="line">+---------+---+---+</span><br><span class="line">|remainder|sum|avg|</span><br><span class="line">+---------+---+---+</span><br><span class="line">|        <span class="number">0</span>| <span class="number">20</span>|<span class="number">4.0</span>|</span><br><span class="line">|        <span class="number">1</span>| <span class="number">25</span>|<span class="number">5.0</span>|</span><br><span class="line">+---------+---+---+</span><br></pre></td></tr></table></div></figure>
+
+
+        <h3 id="Window-Aggregate"   >
+          <a href="#Window-Aggregate" class="heading-link"><i class="fas fa-link"></i></a>Window Aggregate</h3>
+      
+        <h4 id="Window"   >
+          <a href="#Window" class="heading-link"><i class="fas fa-link"></i></a>Window</h4>
+      <p>窗口计算，这里的 window 像是有序的分组。window 相比 groupBy 保证了分组有序。emnn，当然了，你也可以自己选择初始化 window 的时候不进行 orderBy。</p>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd7rqjkae3j314q0es41o.jpg"></p>
+<p>window 的源码在 spark.sql  的 expressions.window 中。从源码中可以看到 window 的类型是一个叫 windowSpec 的东西。点进去，可以发现创建一个 windowSpec 所需的东西 → parationBy，orderBy，Frame 边界。 parationBy 和 orderBy 比较容易理解。就是分区和区内排序。下面说要 Window Frame 的一些概念。</p>
+<p>Frame 边界可以由 rowsbetween，rangeBetween 等指定。而边界会有一些变量和偏移量来指定。比如 （window.currentRow，2）的含义就是当前行和后面两行作为一个计算单元。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>变量</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>window.currentRow</td>
+<td>当前行</td>
+</tr>
+<tr>
+<td>window.unboundedPreceding</td>
+<td>分区内的第一行</td>
+</tr>
+<tr>
+<td>window.unboundedFollowing</td>
+<td>分区内的最后一行</td>
+</tr>
+</tbody></table></div>
+<p>下面的例子定义了几个 window，你应该已经发现了问题，这几个 window 的 parationBy，orderBy和边界都是一样的，但是基于 window 的计算结果确是不一样的。这是因为定义边界的方法不一样。 </p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>rowsBetween</td>
+<td>物理边界，rowsBetween(Window.currentRow, 1)，对于下面的例子来说，就是分区内当前行与前一行</td>
+</tr>
+<tr>
+<td>rangeBetween</td>
+<td>逻辑边界，rangeBetween(Window.currentRow, 1)，对于下面的例子来说，就是符合当前行 &lt;= id &lt;= 当前行的值 + 1 的所有行作为一个计算单元。rangeBetween(-1, 3)，就是 当前行的值 - 1 &lt;= id &lt;= 当前行的值 + 3 的所有行作为一个计算单元</td>
+</tr>
+</tbody></table></div>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">val</span> df = <span class="type">Seq</span>((<span class="number">1</span>, <span class="string">&quot;a&quot;</span>), (<span class="number">1</span>, <span class="string">&quot;a&quot;</span>), (<span class="number">2</span>, <span class="string">&quot;a&quot;</span>), (<span class="number">1</span>, <span class="string">&quot;b&quot;</span>), (<span class="number">2</span>, <span class="string">&quot;b&quot;</span>), (<span class="number">3</span>, <span class="string">&quot;b&quot;</span>)).toDF(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;category&quot;</span>)</span><br><span class="line">df: org.apache.spark.sql.<span class="type">DataFrame</span> = [id: int, category: string]</span><br><span class="line"></span><br><span class="line">scala&gt; <span class="keyword">import</span> org.apache.spark.sql.expressions.<span class="type">Window</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.expressions.<span class="type">Window</span></span><br><span class="line"></span><br><span class="line">scala&gt; <span class="keyword">val</span> window = <span class="type">Window</span>.partitionBy(<span class="string">&quot;category&quot;</span>).orderBy(<span class="string">&quot;id&quot;</span>).rowsBetween(<span class="type">Window</span>.currentRow, <span class="number">1</span>)</span><br><span class="line">window: org.apache.spark.sql.expressions.<span class="type">WindowSpec</span> = org.apache.spark.sql.expressions.<span class="type">WindowSpec</span>@<span class="number">62</span>ff2e08</span><br><span class="line"></span><br><span class="line">scala&gt; df.withColumn(<span class="string">&quot;sum&quot;</span>, sum(<span class="string">&quot;id&quot;</span>) over window).show()</span><br><span class="line">+---+--------+---+</span><br><span class="line">| id|category|sum|</span><br><span class="line">+---+--------+---+</span><br><span class="line">|  <span class="number">1</span>|       b|  <span class="number">3</span>|</span><br><span class="line">|  <span class="number">2</span>|       b|  <span class="number">5</span>|</span><br><span class="line">|  <span class="number">3</span>|       b|  <span class="number">3</span>|</span><br><span class="line">|  <span class="number">1</span>|       a|  <span class="number">2</span>|</span><br><span class="line">|  <span class="number">1</span>|       a|  <span class="number">3</span>|</span><br><span class="line">|  <span class="number">2</span>|       a|  <span class="number">2</span>|</span><br><span class="line">+---+--------+---+</span><br><span class="line"></span><br><span class="line">scala&gt; <span class="keyword">val</span> window = <span class="type">Window</span>.partitionBy(<span class="string">&quot;category&quot;</span>).orderBy(<span class="string">&quot;id&quot;</span>).rangeBetween(<span class="type">Window</span>.currentRow, <span class="number">1</span>)</span><br><span class="line">window: org.apache.spark.sql.expressions.<span class="type">WindowSpec</span> = org.apache.spark.sql.expressions.<span class="type">WindowSpec</span>@<span class="number">6</span>fae2aa5</span><br><span class="line"></span><br><span class="line">scala&gt; df.withColumn(<span class="string">&quot;sum&quot;</span>, sum(<span class="string">&quot;id&quot;</span>) over window).show()</span><br><span class="line">+---+--------+---+</span><br><span class="line">| id|category|sum|</span><br><span class="line">+---+--------+---+</span><br><span class="line">|  <span class="number">1</span>|       b|  <span class="number">3</span>|</span><br><span class="line">|  <span class="number">2</span>|       b|  <span class="number">5</span>|</span><br><span class="line">|  <span class="number">3</span>|       b|  <span class="number">3</span>|</span><br><span class="line">|  <span class="number">1</span>|       a|  <span class="number">4</span>|</span><br><span class="line">|  <span class="number">1</span>|       a|  <span class="number">4</span>|</span><br><span class="line">|  <span class="number">2</span>|       a|  <span class="number">2</span>|</span><br><span class="line">+---+--------+---+</span><br></pre></td></tr></table></div></figure>
+
+
+        <h4 id="Window-Aggregate-Functions"   >
+          <a href="#Window-Aggregate-Functions" class="heading-link"><i class="fas fa-link"></i></a>Window Aggregate Functions</h4>
+      <p>除了和 groupBy 一样，有 sum，max，avg 等函数外。window 还为我们提供了处理每个分组内行与行之间计算的方法。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>rank</td>
+<td>排行</td>
+</tr>
+<tr>
+<td>dense_rank</td>
+<td>排行</td>
+</tr>
+<tr>
+<td>ntile</td>
+<td>排行</td>
+</tr>
+<tr>
+<td>precent_rank</td>
+<td></td>
+</tr>
+<tr>
+<td>cume_dist</td>
+<td>累计概率分布</td>
+</tr>
+<tr>
+<td>row_number</td>
+<td>增加行号列</td>
+</tr>
+<tr>
+<td>lag</td>
+<td>计算当前行与前 offset 行的差值，没有会为 null，可以设置 defaultValue。</td>
+</tr>
+<tr>
+<td>lead</td>
+<td>计算当前行与后 offset 行的差值，没有会为 null，可以设置 defaultValue。</td>
+</tr>
+<tr>
+<td>rank</td>
+<td>遇到重复值和 dense_rank 遇到重复值的处理方式是不一样的。rank 遇到重复值使用相同排行，但是整体排行会增加，而 dense_rank 不会增加。</td>
+</tr>
+</tbody></table></div>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> dataset = spark.range(<span class="number">9</span>).withColumn(<span class="string">&quot;bucket&quot;</span>, <span class="symbol">&#x27;id</span> % <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.expressions.<span class="type">Window</span></span><br><span class="line"><span class="keyword">val</span> byBucket = <span class="type">Window</span>.partitionBy(<span class="symbol">&#x27;bucket</span>).orderBy(<span class="symbol">&#x27;id</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; dataset.union(dataset).withColumn(<span class="string">&quot;rank&quot;</span>, rank over byBucket).show</span><br><span class="line">+---+------+----+</span><br><span class="line">| id|bucket|rank|</span><br><span class="line">+---+------+----+</span><br><span class="line">|  <span class="number">0</span>|     <span class="number">0</span>|   <span class="number">1</span>|</span><br><span class="line">|  <span class="number">0</span>|     <span class="number">0</span>|   <span class="number">1</span>|</span><br><span class="line">|  <span class="number">3</span>|     <span class="number">0</span>|   <span class="number">3</span>|</span><br><span class="line">|  <span class="number">3</span>|     <span class="number">0</span>|   <span class="number">3</span>|</span><br><span class="line">|  <span class="number">6</span>|     <span class="number">0</span>|   <span class="number">5</span>|</span><br><span class="line">|  <span class="number">6</span>|     <span class="number">0</span>|   <span class="number">5</span>|</span><br><span class="line">|  <span class="number">1</span>|     <span class="number">1</span>|   <span class="number">1</span>|</span><br><span class="line">|  <span class="number">1</span>|     <span class="number">1</span>|   <span class="number">1</span>|</span><br><span class="line">|  <span class="number">4</span>|     <span class="number">1</span>|   <span class="number">3</span>|</span><br><span class="line">|  <span class="number">4</span>|     <span class="number">1</span>|   <span class="number">3</span>|</span><br><span class="line">|  <span class="number">7</span>|     <span class="number">1</span>|   <span class="number">5</span>|</span><br><span class="line">|  <span class="number">7</span>|     <span class="number">1</span>|   <span class="number">5</span>|</span><br><span class="line">|  <span class="number">2</span>|     <span class="number">2</span>|   <span class="number">1</span>|</span><br><span class="line">|  <span class="number">2</span>|     <span class="number">2</span>|   <span class="number">1</span>|</span><br><span class="line">|  <span class="number">5</span>|     <span class="number">2</span>|   <span class="number">3</span>|</span><br><span class="line">|  <span class="number">5</span>|     <span class="number">2</span>|   <span class="number">3</span>|</span><br><span class="line">|  <span class="number">8</span>|     <span class="number">2</span>|   <span class="number">5</span>|</span><br><span class="line">|  <span class="number">8</span>|     <span class="number">2</span>|   <span class="number">5</span>|</span><br><span class="line">+---+------+----+</span><br><span class="line"></span><br><span class="line">scala&gt; dataset.union(dataset).withColumn(<span class="string">&quot;dense_rank&quot;</span>, dense_rank over byBucket).show</span><br><span class="line">+---+------+----------+</span><br><span class="line">| id|bucket|dense_rank|</span><br><span class="line">+---+------+----------+</span><br><span class="line">|  <span class="number">0</span>|     <span class="number">0</span>|         <span class="number">1</span>|</span><br><span class="line">|  <span class="number">0</span>|     <span class="number">0</span>|         <span class="number">1</span>|</span><br><span class="line">|  <span class="number">3</span>|     <span class="number">0</span>|         <span class="number">2</span>|</span><br><span class="line">|  <span class="number">3</span>|     <span class="number">0</span>|         <span class="number">2</span>|</span><br><span class="line">|  <span class="number">6</span>|     <span class="number">0</span>|         <span class="number">3</span>|</span><br><span class="line">|  <span class="number">6</span>|     <span class="number">0</span>|         <span class="number">3</span>|</span><br><span class="line">|  <span class="number">1</span>|     <span class="number">1</span>|         <span class="number">1</span>|</span><br><span class="line">|  <span class="number">1</span>|     <span class="number">1</span>|         <span class="number">1</span>|</span><br><span class="line">|  <span class="number">4</span>|     <span class="number">1</span>|         <span class="number">2</span>|</span><br><span class="line">|  <span class="number">4</span>|     <span class="number">1</span>|         <span class="number">2</span>|</span><br><span class="line">|  <span class="number">7</span>|     <span class="number">1</span>|         <span class="number">3</span>|</span><br><span class="line">|  <span class="number">7</span>|     <span class="number">1</span>|         <span class="number">3</span>|</span><br><span class="line">|  <span class="number">2</span>|     <span class="number">2</span>|         <span class="number">1</span>|</span><br><span class="line">|  <span class="number">2</span>|     <span class="number">2</span>|         <span class="number">1</span>|</span><br><span class="line">|  <span class="number">5</span>|     <span class="number">2</span>|         <span class="number">2</span>|</span><br><span class="line">|  <span class="number">5</span>|     <span class="number">2</span>|         <span class="number">2</span>|</span><br><span class="line">|  <span class="number">8</span>|     <span class="number">2</span>|         <span class="number">3</span>|</span><br><span class="line">|  <span class="number">8</span>|     <span class="number">2</span>|         <span class="number">3</span>|</span><br><span class="line">+---+------+----------+</span><br></pre></td></tr></table></div></figure>
+<p>其他一些函数，我个人也写了一些示例，感兴趣可以运行一下</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.expressions.&#123;<span class="type">Window</span>, <span class="type">WindowSpec</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.functions._</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">window_aggregate</span> </span>&#123;</span><br><span class="line">  <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder.master(<span class="string">&quot;local[*]&quot;</span>).getOrCreate()</span><br><span class="line">  <span class="keyword">import</span> spark.implicits._</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">   * 详细可以查看源码，类型 org.apache.spark.sql.expressions.WindowSpec</span></span><br><span class="line"><span class="comment">   * val window:WindowSpec = Window.partitionBy(&quot;id&quot;).orderBy(&quot;year&quot;)</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">Salary</span>(<span class="params">depName: <span class="type">String</span>, empNo: <span class="type">Long</span>, salary: <span class="type">Long</span></span>)</span></span><br><span class="line"><span class="class">  <span class="title">val</span> <span class="title">empSalary</span> </span>= <span class="type">Seq</span>(</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;sales&quot;</span>, <span class="number">1</span>, <span class="number">5000</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;personnel&quot;</span>, <span class="number">2</span>, <span class="number">3900</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;sales&quot;</span>, <span class="number">3</span>, <span class="number">4800</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;sales&quot;</span>, <span class="number">4</span>, <span class="number">4800</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;personnel&quot;</span>, <span class="number">5</span>, <span class="number">3500</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;develop&quot;</span>, <span class="number">7</span>, <span class="number">4200</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;develop&quot;</span>, <span class="number">8</span>, <span class="number">6000</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;develop&quot;</span>, <span class="number">9</span>, <span class="number">4500</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;develop&quot;</span>, <span class="number">10</span>, <span class="number">5200</span>),</span><br><span class="line">    <span class="type">Salary</span>(<span class="string">&quot;develop&quot;</span>, <span class="number">11</span>, <span class="number">5200</span>)).toDS</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * window Rank functions</span></span><br><span class="line"><span class="comment">     * rank</span></span><br><span class="line"><span class="comment">     * dense_rank</span></span><br><span class="line"><span class="comment">     * row_number</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">val</span> nameWindowDesc = <span class="type">Window</span>.partitionBy(<span class="string">&quot;depName&quot;</span>).orderBy($<span class="string">&quot;salary&quot;</span>.desc)</span><br><span class="line">    empSalary.withColumn(<span class="string">&quot;rank&quot;</span>, rank() over nameWindowDesc).show()</span><br><span class="line"></span><br><span class="line">    empSalary</span><br><span class="line">      .withColumn(<span class="string">&quot;dense_rank&quot;</span>, dense_rank() over nameWindowDesc)  <span class="comment">// Top n Salary</span></span><br><span class="line">      .filter($<span class="string">&quot;dense_rank&quot;</span> &lt;= <span class="number">2</span>)</span><br><span class="line">      .show()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * window Analytic functions</span></span><br><span class="line"><span class="comment">     * lag  计算当前行与前 offset 行, 没有会置null, 也可以设置参数 default_value</span></span><br><span class="line"><span class="comment">     * lead 计算当前行与后 offset 行</span></span><br><span class="line"><span class="comment">     * cume_dist 出现的概率累计分布</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">val</span> diffSalaryPerRow = empSalary.withColumn(<span class="string">&quot;diff&quot;</span>, lag($<span class="string">&quot;salary&quot;</span>, <span class="number">1</span>) over nameWindowDesc)</span><br><span class="line">    <span class="keyword">val</span> diffSalaryTwoRow = empSalary.withColumn(<span class="string">&quot;diff&quot;</span>, lead($<span class="string">&quot;salary&quot;</span>, <span class="number">2</span>) over nameWindowDesc)</span><br><span class="line"></span><br><span class="line">    diffSalaryPerRow.show()</span><br><span class="line">    diffSalaryTwoRow.show()</span><br><span class="line"></span><br><span class="line">    empSalary</span><br><span class="line">      .withColumn(<span class="string">&quot;cume_dist&quot;</span>, cume_dist() over nameWindowDesc)</span><br><span class="line">      .show()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * window Aggregate functions</span></span><br><span class="line"><span class="comment">     * 注意一下rangeBetween, rowBetween, 说白了就是为window Frame 的计算设置边界。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">val</span> nameWindow = <span class="type">Window</span>.partitionBy(<span class="string">&quot;depName&quot;</span>)</span><br><span class="line">    empSalary.withColumn(<span class="string">&quot;avg&quot;</span>, avg($<span class="string">&quot;salary&quot;</span>) over nameWindow).show()</span><br><span class="line">    empSalary.withColumn(<span class="string">&quot;avg&quot;</span>, max($<span class="string">&quot;salary&quot;</span>) over nameWindow).show()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> rangeWindow = <span class="type">Window</span>.rangeBetween(<span class="type">Window</span>.currentRow, <span class="number">1</span>)</span><br><span class="line">    empSalary.withColumn(<span class="string">&quot;avg&quot;</span>, sum($<span class="string">&quot;salary&quot;</span>) over rangeWindow).show() <span class="comment">// 打印出来会是什么呢？</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> maxSalary = max($<span class="string">&quot;salary&quot;</span>).over(nameWindow) - $<span class="string">&quot;salary&quot;</span></span><br><span class="line">    empSalary.withColumn(<span class="string">&quot;salary_max_diff&quot;</span>, maxSalary).show()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> orderWindow = <span class="type">Window</span>.orderBy(<span class="string">&quot;salary&quot;</span>) <span class="comment">// 会报Warning, 没有partitionBy 会导致数据都到一个partition下面</span></span><br><span class="line">    empSalary</span><br><span class="line">      .withColumn(<span class="string">&quot;salary_total&quot;</span>, sum(<span class="string">&quot;salary&quot;</span>) over orderWindow)</span><br><span class="line">      .show()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></div></figure>
+
+
+        <h3 id="Multidimensional-Analysis"   >
+          <a href="#Multidimensional-Analysis" class="heading-link"><i class="fas fa-link"></i></a>Multidimensional Analysis</h3>
+      <p>多维度分析。根据指定列的排列组合进行 groupBy。</p>
+
+        <h4 id="cube-rollup"   >
+          <a href="#cube-rollup" class="heading-link"><i class="fas fa-link"></i></a>cube / rollup</h4>
+      <p>cube，rollup 都用于多维度分析。区别在于 cube 是对传入的列的所有组合来 groupBy，而 rollup 是层次级别的。比如下面的例子，cube 的操作是 (age, city)，(age)， (city)，全表分组。rollup的操作是 (age, city)，(age)，全表分组。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> columns = <span class="type">Seq</span>(<span class="string">&quot;name&quot;</span>, <span class="string">&quot;age&quot;</span>, <span class="string">&quot;city&quot;</span>, <span class="string">&quot;vip_level&quot;</span>, <span class="string">&quot;view_count&quot;</span>)</span><br><span class="line"><span class="keyword">val</span> users = <span class="type">Seq</span>(</span><br><span class="line">		(<span class="string">&quot;Tom&quot;</span>, <span class="number">10</span>, <span class="string">&quot;北京&quot;</span>, <span class="number">0</span>, <span class="number">111</span>),</span><br><span class="line">		(<span class="string">&quot;Jack&quot;</span>, <span class="number">20</span>, <span class="string">&quot;上海&quot;</span>, <span class="number">1</span>, <span class="number">3000</span>),</span><br><span class="line">		(<span class="string">&quot;David&quot;</span>, <span class="number">23</span>, <span class="string">&quot;北京&quot;</span>, <span class="number">3</span>, <span class="number">4000</span>),</span><br><span class="line">		(<span class="string">&quot;Mary&quot;</span>, <span class="number">18</span>, <span class="string">&quot;上海&quot;</span>, <span class="number">1</span>, <span class="number">1234</span>),</span><br><span class="line">		(<span class="string">&quot;Tony&quot;</span>, <span class="number">50</span>, <span class="string">&quot;深圳&quot;</span>, <span class="number">0</span>, <span class="number">200</span>),</span><br><span class="line">		(<span class="string">&quot;Group&quot;</span>, <span class="number">60</span>, <span class="string">&quot;北京&quot;</span>, <span class="number">0</span>, <span class="number">40</span>),</span><br><span class="line">		(<span class="string">&quot;Ali&quot;</span>, <span class="number">34</span>, <span class="string">&quot;上海&quot;</span>, <span class="number">4</span>, <span class="number">6666</span>),</span><br><span class="line">		(<span class="string">&quot;Alas&quot;</span>, <span class="number">45</span>, <span class="string">&quot;北京&quot;</span>, <span class="number">2</span>, <span class="number">10000</span>)</span><br><span class="line">	).toDF(columns: _*)</span><br><span class="line"></span><br><span class="line">users</span><br><span class="line">	.rollup(<span class="string">&quot;age&quot;</span>, <span class="string">&quot;city&quot;</span>)</span><br><span class="line">	.sum(<span class="string">&quot;view_count&quot;</span>).alias(<span class="string">&quot;sum_view&quot;</span>)</span><br><span class="line">	.na.fill(<span class="string">&quot;None&quot;</span>)</span><br><span class="line">	.show()</span><br><span class="line"></span><br><span class="line">users</span><br><span class="line">	.cube(<span class="string">&quot;age&quot;</span>, <span class="string">&quot;city&quot;</span>)</span><br><span class="line">	.sum(<span class="string">&quot;view_count&quot;</span>).alias(<span class="string">&quot;sum_view&quot;</span>)</span><br><span class="line">	.show()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="pivot-透视"   >
+          <a href="#pivot-透视" class="heading-link"><i class="fas fa-link"></i></a>pivot 透视</h4>
+      <p>pivot 透视，利用 stack 反透视。关于透视表，请移步维基百科透视表。可以运行下面的例子自己看下。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> example = <span class="type">Seq</span>(</span><br><span class="line">      (<span class="string">&quot;北京&quot;</span>, <span class="number">10000</span>, <span class="number">2015</span>),</span><br><span class="line">      (<span class="string">&quot;北京&quot;</span>, <span class="number">11000</span>, <span class="number">2016</span>),</span><br><span class="line">      (<span class="string">&quot;北京&quot;</span>, <span class="number">12000</span>, <span class="number">2017</span>),</span><br><span class="line">      (<span class="string">&quot;上海&quot;</span>, <span class="number">10300</span>, <span class="number">2015</span>),</span><br><span class="line">      (<span class="string">&quot;上海&quot;</span>, <span class="number">11700</span>, <span class="number">2016</span>)</span><br><span class="line">    ).toDF(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;value&quot;</span>, <span class="string">&quot;year&quot;</span>)</span><br><span class="line"></span><br><span class="line">example.show()</span><br><span class="line"><span class="keyword">val</span> piv = example.groupBy(<span class="string">&quot;city&quot;</span>).pivot(<span class="string">&quot;year&quot;</span>).sum(<span class="string">&quot;value&quot;</span>)</span><br><span class="line">piv.show()</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> unPiv = piv</span><br><span class="line">	.selectExpr(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;stack(3, &#x27;2015&#x27;, `2015`, &#x27;2016&#x27;, `2016`, &#x27;2017&#x27;, `2017`) as (year, value)&quot;</span>)</span><br><span class="line">    .filter($<span class="string">&quot;value&quot;</span>.isNotNull)</span><br><span class="line">unPiv.show()</span><br></pre></td></tr></table></div></figure>
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/bfb6e21b/">https://timemachine.icu/posts/bfb6e21b/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Spark/">Spark</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/fb27551c/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">UDAF - User Defined Aggregate  Functions</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/d35f6739/"><span class="paginator-prev__text">UDF - User  Defined  Functions</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Basic-Aggregate"><span class="toc-number">2.</span> <span class="toc-text">
+          Basic Aggregate</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#RelationGroupedDataset-%E4%B8%8E-KeyValueGroupedDataset"><span class="toc-number">2.1.</span> <span class="toc-text">
+          RelationGroupedDataset 与 KeyValueGroupedDataset</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#groupBy"><span class="toc-number">2.2.</span> <span class="toc-text">
+          groupBy</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#groupByKey"><span class="toc-number">2.3.</span> <span class="toc-text">
+          groupByKey</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#agg"><span class="toc-number">2.4.</span> <span class="toc-text">
+          agg</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Window-Aggregate"><span class="toc-number">3.</span> <span class="toc-text">
+          Window Aggregate</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Window"><span class="toc-number">3.1.</span> <span class="toc-text">
+          Window</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Window-Aggregate-Functions"><span class="toc-number">3.2.</span> <span class="toc-text">
+          Window Aggregate Functions</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Multidimensional-Analysis"><span class="toc-number">4.</span> <span class="toc-text">
+          Multidimensional Analysis</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#cube-rollup"><span class="toc-number">4.1.</span> <span class="toc-text">
+          cube &#x2F; rollup</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#pivot-%E9%80%8F%E8%A7%86"><span class="toc-number">4.2.</span> <span class="toc-text">
+          pivot 透视</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/bfb6e21b/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/bfb6e21b/';
+        this.page.identifier = 'posts/bfb6e21b/';
+        this.page.title = 'Aggregate - 普通的聚合计算和基于 window 的聚合计算';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

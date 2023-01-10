@@ -1,0 +1,490 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言日常工作中采用 Druid 做流量日志分析。因为是刚接触，所以在离线&#x2F;实时数据摄入过程中经常会碰到一些问题，本文主要用来记录这些问题及一些思考。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="druid 问题记录">
+<meta property="og:url" content="https://timemachine.icu/posts/ea82a2ca/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言日常工作中采用 Druid 做流量日志分析。因为是刚接触，所以在离线&#x2F;实时数据摄入过程中经常会碰到一些问题，本文主要用来记录这些问题及一些思考。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/determinedHashPartiion_run.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/injectDruidProperties.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/index_generator_run.png">
+<meta property="article:published_time" content="2021-08-19T10:46:45.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Druid">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/determinedHashPartiion_run.png"><title>druid 问题记录 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/ea82a2ca/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">druid 问题记录</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-08-19</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">2.2k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">17分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>日常工作中采用 Druid 做流量日志分析。因为是刚接触，所以在离线/实时数据摄入过程中经常会碰到一些问题，本文主要用来记录这些问题及一些思考。</p>
+<a id="more"></a>
+
+
+        <h3 id="问题记录"   >
+          <a href="#问题记录" class="heading-link"><i class="fas fa-link"></i></a>问题记录</h3>
+      
+        <h4 id="实时摄入任务-offset-获取失败"   >
+          <a href="#实时摄入任务-offset-获取失败" class="heading-link"><i class="fas fa-link"></i></a>实时摄入任务 offset 获取失败</h4>
+      <p>完整错误如下。实时摄入脚本在一周内发生了三次这样的错误，属于偶发错误，前两次伴随着 coordinator 节点的重启，当时查看任务日志发现请求 coordinator 接口失败，以为是任务恰好在该节点上，所以发生错误。<br>最后一次发生没有节点重启，当时查看了 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/apache/druid/issues/7926" >issue#7926</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，说是 0.16 之前的版本在某些竞态条件下会拿到 start 类型的 offset，而 druid 默认采用 end 类型，在做 minus 减法时，发现 <code>SeekableStreamEndSequenceNumbers</code> 和 <code>SeekableStreamEndSequenceNumbers</code> 类型不匹配，由此产生异常。</p>
+<p>至于是何种条件导致拿到了  start 类型的 offset，看了下源码也没看明白，留作疑问。这里个人也有个疑问，既然默认采用了 end 类型，并且 kafka 和 kinesis 使用的方法大体一致，为什么此处不合并成一个 <code>SeekableStreamEndSequenceNumbers</code> 类呢？</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;timestamp&quot;</span>: <span class="string">&quot;2021-08-05T03:44:17.495Z&quot;</span>,</span><br><span class="line"><span class="string">&quot;exceptionClass&quot;</span>: <span class="string">&quot;org.apache.druid.java.util.common.IAE&quot;</span>,</span><br><span class="line"><span class="string">&quot;message&quot;</span>: <span class="string">&quot;org.apache.druid.java.util.common.IAE: Expected instance of org.apache.druid.indexing.seekablestream.SeekableStreamEndSequenceNumbers, got org.apache.druid.indexing.seekablestream.SeekableStreamStartSequenceNumbers\n\tat org.apache.druid.indexing.seekablestream.SeekableStreamEndSequenceNumbers.minus(SeekableStreamEndSequenceNumbers.java:159)\n\tat org.apache.druid.indexing.seekablestream.SeekableStreamDataSourceMetadata.minus(SeekableStreamDataSourceMetadata.java:95)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.resetInternal(SeekableStreamSupervisor.java:1210)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.getOffsetFromStorageForPartition(SeekableStreamSupervisor.java:2517)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.generateStartingSequencesForPartitionGroup(SeekableStreamSupervisor.java:2494)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.createNewTasks(SeekableStreamSupervisor.java:2392)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.runInternal(SeekableStreamSupervisor.java:1068)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor$RunNotice.handle(SeekableStreamSupervisor.java:292)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.lambda$tryInit$3(SeekableStreamSupervisor.java:751)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\n&quot;</span>,</span><br><span class="line"><span class="string">&quot;streamException&quot;</span>: <span class="keyword">false</span></span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>后续又看了下此问题，因为摄入任务参数中设置了 resetOffsetAutomatically 为 true，屏蔽了底层问题。修改后，报错如下。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;timestamp&quot;</span>: <span class="string">&quot;2021-10-04T06:40:40.607Z&quot;</span>,</span><br><span class="line"><span class="string">&quot;exceptionClass&quot;</span>: <span class="string">&quot;org.apache.druid.java.util.common.ISE&quot;</span>,</span><br><span class="line"><span class="string">&quot;message&quot;</span>: <span class="string">&quot;org.apache.druid.indexing.seekablestream.common.StreamException: org.apache.druid.java.util.common.ISE: Previous sequenceNumber [95252478] is no longer available for partition [1]. You can clear the previous sequenceNumber and start reading from a valid message by using the supervisor&#x27;s reset API.\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.getOffsetFromStorageForPartition(SeekableStreamSupervisor.java:2527)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.generateStartingSequencesForPartitionGroup(SeekableStreamSupervisor.java:2494)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.createNewTasks(SeekableStreamSupervisor.java:2392)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.runInternal(SeekableStreamSupervisor.java:1068)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor$RunNotice.handle(SeekableStreamSupervisor.java:292)\n\tat org.apache.druid.indexing.seekablestream.supervisor.SeekableStreamSupervisor.lambda$tryInit$3(SeekableStreamSupervisor.java:751)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\nCaused by: org.apache.druid.java.util.common.ISE: Previous sequenceNumber [95252478] is no longer available for partition [1]. You can clear the previous sequenceNumber and start reading from a valid message by using the supervisor&#x27;s reset API.\n\t... 11 more\n&quot;</span>,</span><br><span class="line"><span class="string">&quot;streamException&quot;</span>: <span class="keyword">true</span></span><br></pre></td></tr></table></div></figure>
+<p>查看 kafka offset 信息，报错中的 offset 是三天前的，而 topic 只保留 24h 数据，同时查看 overload 日志，发现 not updating metadata 的日志，看起来是 druid_datasource 的元数据没更新导致，查看源码，发现如果是更新失败的话，还会有 <code>Not updating metadata, compare-and-swap failure</code> 的错误，但是这里没有。好嘛，一个问题变成两了，因为日志留存问题，需要等下次报错再查了。</p>
+<ul>
+<li>为什么今天的摄入任务会试图读取几天前的 offset ?</li>
+<li>为什么设置了自动 reset，在重置的时候会一直报错？</li>
+</ul>
+
+        <h4 id="实时摄入任务直接切换-source-topic-引发的-segment-publish-failed"   >
+          <a href="#实时摄入任务直接切换-source-topic-引发的-segment-publish-failed" class="heading-link"><i class="fas fa-link"></i></a>实时摄入任务直接切换 source topic 引发的 segment publish failed</h4>
+      <p>完整错误如下。显示 segemt 发布失败。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;errorMsg&quot;</span>: <span class="string">&quot;java.util.concurrent.ExecutionException: org.apache.druid.java.util.common.ISE: Failed to publish segments because of [java.lang.RuntimeException: Aborting transaction!].\n\tat com.google.common.util.concurrent.AbstractFuture$Sync.getValue(AbstractFuture.java:299)\n\tat com.google.common.util.concurrent.AbstractFuture$Sync.get(AbstractFuture.java:286)\n\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:116)\n\tat org.apache.druid.indexing.seekablestream.SeekableStreamIndexTaskRunner.runInternal(SeekableStreamIndexTaskRunner.java:767)\n\tat org.apache.druid.indexing.seekablestream.SeekableStreamIndexTaskRunner.run(SeekableStreamIndexTaskRunner.java:235)\n\tat org.apache.druid.indexing.seekablestream.SeekableStreamIndexTask.run(SeekableStreamIndexTask.java:168)\n\tat org.apache.druid.indexing.overlord.SingleTaskBackgroundRunner$SingleTaskBackgroundRunnerCallable.call(SingleTaskBackgroundRunner.java:413)\n\tat org.apache.druid.indexing.overlord.SingleTaskBackgroundRunner$SingleTaskBackgroundRunnerCallable.call(SingleTaskBackgroundRunner.java:385)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\nCaused by: org.apache.druid.java.util.common.ISE: Failed to publish segments because of [java.lang.RuntimeException: Aborting transaction!].\n\tat org.apache.druid.segment.realtime.appenderator.BaseAppenderatorDriver.lambda$publishInBackground$8(BaseAppenderatorDriver.java:602)\n\t... 4 more\n&quot;</span></span><br></pre></td></tr></table></div></figure>
+<p>还原下问题场景，实时摄入脚本一开始采用测试 topic 源，和线上旧任务双跑两天后，发现数据一致，遂修改脚本切换到线上 topic。切换过程如下</p>
+<ol>
+<li>暂停测试 supervisor，显示 SUSPENDED。</li>
+<li>等待 supervisor 还在运行的 task 完成，手动 kill。</li>
+<li>terminate 掉测试 supervisor。</li>
+<li>提交修改 topic 源后的 supervisor spec。<br>因为设置了任务 task_duration 为 7200s，即实时摄入的 segement 每两个小时发布一次。在未到达发布周期前，任务运行正常。到达发布周期后，任务开始报 segement 发布失败。任务自动拉起后，失败的 segment 被移除，其元数据记录在 druid_pendingSegement 表中，在下游 BI 上的表现就是上个数据周期内数据丢失。</li>
+</ol>
+<p>开始查找问题原因，task log 中只有上述错误信息。segment 的发布涉及到 middlemanager 和 overload 进程。查看 overload log，搜索 datasource 名或者 topic 名称，发现如下 error。新的元数据中 topic offset 和旧的元数据中的 topic offset 不匹配。</p>
+<figure class="highlight java"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Not updating metadata, existing state[KafkaDataSourceMetadata&#123;SeekableStreamStartSequenceNumbers=SeekableStreamEndSequenceNumbers&#123;stream=<span class="string">&#x27;$&#123;test_topic&#125;&#x27;</span>, partitionSequenceNumberMap=&#123;<span class="number">0</span>=<span class="number">38254782</span>, <span class="number">1</span>=<span class="number">38220215</span>, <span class="number">2</span>=<span class="number">38217021</span>, <span class="number">3</span>=<span class="number">38232724</span>, <span class="number">4</span>=<span class="number">38230157</span>, <span class="number">5</span>=<span class="number">38219118</span>&#125;&#125;&#125;] in metadata store doesn<span class="string">&#x27;t match to the new start state[KafkaDataSourceMetadata&#123;SeekableStreamStartSequenceNumbers=SeekableStreamStartSequenceNumbers&#123;stream=&#x27;</span>$&#123;product_topci&#125;<span class="string">&#x27;, partitionSequenceNumberMap=&#123;1=38220215,2=38217021&#125;, exclusivePartitions=[]&#125;&#125;].</span></span><br></pre></td></tr></table></div></figure>
+<p>看到这里的想法是找到对应的元数据并修正。查看元数据库，scan 了 <code>druid_segments</code>，<code>druid_tasks</code> 等几张元数据表，并没有发现存储 offset 信息的地方，怀疑是存在 zk 上。查看 <code>druid_pendingSegments</code>，发现存在未被移交的 segment 信息都在这里，查询目标 datasource，存在 124 个处于 pending 的 segment。</p>
+<p>看起来是终止 supervisor 后，还存在未被发布的 segment。切换 topic 后，元数据一直更新检查失败，进而导致后续的 segment 全部发布失败，并且发布失败的 segment 被‘丢弃’掉。</p>
+<p>此处参考了 <code>https://www.codeleading.com/article/33392556609/</code> 的方法，清除对应 datasource 的 pendingSegement 中的元数据后，再重新提交 supervisor spec 即可。</p>
+<p>这个错误也告诉我们在终止 supervisor 前要验证剩余未发布的 segment 是否被正确处理，在做其他操作。</p>
+
+        <h4 id="正式集群和测试集群某些配置相同引发的稳定性问题"   >
+          <a href="#正式集群和测试集群某些配置相同引发的稳定性问题" class="heading-link"><i class="fas fa-link"></i></a>正式集群和测试集群某些配置相同引发的稳定性问题</h4>
+      <p>正式集群和测试集群的 <code>druid.indexer.task.hadoopWorkingPath</code> 配置相同，但是两个集群的账号权限不一样，导致同一个目录下存在两个账号写入的文件，线上摄入任务在处理不同账号文件时报了权限错误。</p>
+<p>这里碰到的具体问题其实是算 uv 类指标时，生成的 build-dict job 在删除过期版本字典时没有权限，导致整个 MR 失败。因为开源版本不支持精确去重，生产上用的是快手打的 patch 包，这里的详细原因开源不一定碰的到，就不细说了。</p>
+<p>这件事情得到两个教训：</p>
+<ul>
+<li>测试 datasource 不要和正式环境的 datasource 重名。</li>
+<li>在配置测试集群时要明确配置含义，尤其是存储相关的配置。</li>
+</ul>
+
+        <h4 id="druid-hadoop-index-摄入报错，-java-lang-IllegalStateException-JavaScript-is-disabled？"   >
+          <a href="#druid-hadoop-index-摄入报错，-java-lang-IllegalStateException-JavaScript-is-disabled？" class="heading-link"><i class="fas fa-link"></i></a>druid hadoop_index 摄入报错， java.lang.IllegalStateException: JavaScript is disabled？</h4>
+      <p>0.19.0 之前版本的 bug，在使用 js 解析并且设置 targetPartitionSize 相关分区参数时，启动了 determineHashPartitions job 会触发此错误。可以参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/apache/druid/pull/9553" >PR#9953</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。</p>
+<p>生产上使用的是 0.16.0 版本，查看代码如下，DetermineHashedPartitionsJob 没有调用该方法 <code>JobHelper.injectDruidProperties(job.getConfiguration(), config.getAllowedHadoopPrefix());</code> ，导致 mapreduce.map.java.opts，mapreduce.reduce.java.opts 没有加载上 druid.javascripts 参数，最终整个 job 就会产生 JavaScript is disabled 错误。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/determinedHashPartiion_run.png"><br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/injectDruidProperties.png"></p>
+<p>indexGenerator 和 buildDict job 都调用了该方法，所以不会报错。只会在产生 determineHashPartitions job 时报错。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/index_generator_run.png"></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/ea82a2ca/">https://timemachine.icu/posts/ea82a2ca/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Druid/">Druid</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/b0339e9e/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">druid 离线摄入任务优化</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/fd7aaf9e/"><span class="paginator-prev__text">基于 gitbook 搭建笔记站点</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95"><span class="toc-number">2.</span> <span class="toc-text">
+          问题记录</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%9E%E6%97%B6%E6%91%84%E5%85%A5%E4%BB%BB%E5%8A%A1-offset-%E8%8E%B7%E5%8F%96%E5%A4%B1%E8%B4%A5"><span class="toc-number">2.1.</span> <span class="toc-text">
+          实时摄入任务 offset 获取失败</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%9E%E6%97%B6%E6%91%84%E5%85%A5%E4%BB%BB%E5%8A%A1%E7%9B%B4%E6%8E%A5%E5%88%87%E6%8D%A2-source-topic-%E5%BC%95%E5%8F%91%E7%9A%84-segment-publish-failed"><span class="toc-number">2.2.</span> <span class="toc-text">
+          实时摄入任务直接切换 source topic 引发的 segment publish failed</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%AD%A3%E5%BC%8F%E9%9B%86%E7%BE%A4%E5%92%8C%E6%B5%8B%E8%AF%95%E9%9B%86%E7%BE%A4%E6%9F%90%E4%BA%9B%E9%85%8D%E7%BD%AE%E7%9B%B8%E5%90%8C%E5%BC%95%E5%8F%91%E7%9A%84%E7%A8%B3%E5%AE%9A%E6%80%A7%E9%97%AE%E9%A2%98"><span class="toc-number">2.3.</span> <span class="toc-text">
+          正式集群和测试集群某些配置相同引发的稳定性问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#druid-hadoop-index-%E6%91%84%E5%85%A5%E6%8A%A5%E9%94%99%EF%BC%8C-java-lang-IllegalStateException-JavaScript-is-disabled%EF%BC%9F"><span class="toc-number">2.4.</span> <span class="toc-text">
+          druid hadoop_index 摄入报错， java.lang.IllegalStateException: JavaScript is disabled？</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/ea82a2ca/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/ea82a2ca/';
+        this.page.identifier = 'posts/ea82a2ca/';
+        this.page.title = 'druid 问题记录';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

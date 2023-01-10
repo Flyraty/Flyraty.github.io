@@ -1,0 +1,498 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言为什么要了解数据索引呢？我们都知道索引结构一般会加速查询，那这些索引是如何加速查询的呢？我们有时候建立了索引，但是查询比没建索引都要慢，这又是为什么呢？我们有时候会根据不同的业务场景选择不同的索引类型，选择的依据又是什么呢？ 带着以上几个疑惑，让我们开始了解数据库索引到底是啥，它的底层数据结构是什么样子的，是怎样加速查询的，索引本身又做了哪些优化。希望读完本文后，可以为你解决上述存留在心中的疑">
+<meta property="og:type" content="article">
+<meta property="og:title" content="漫谈数据库索引">
+<meta property="og:url" content="https://timemachine.icu/posts/83cc46f2/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言为什么要了解数据索引呢？我们都知道索引结构一般会加速查询，那这些索引是如何加速查询的呢？我们有时候建立了索引，但是查询比没建索引都要慢，这又是为什么呢？我们有时候会根据不同的业务场景选择不同的索引类型，选择的依据又是什么呢？ 带着以上几个疑惑，让我们开始了解数据库索引到底是啥，它的底层数据结构是什么样子的，是怎样加速查询的，索引本身又做了哪些优化。希望读完本文后，可以为你解决上述存留在心中的疑">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-09-14T13:23:49.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="数据索引">
+<meta name="twitter:card" content="summary"><title>漫谈数据库索引 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/83cc46f2/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">漫谈数据库索引</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-09-14</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">3.2k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">16分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h4 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h4>
+      <p>为什么要了解数据索引呢？我们都知道索引结构一般会加速查询，那这些索引是如何加速查询的呢？我们有时候建立了索引，但是查询比没建索引都要慢，这又是为什么呢？我们有时候会根据不同的业务场景选择不同的索引类型，选择的依据又是什么呢？</p>
+<p>带着以上几个疑惑，让我们开始了解数据库索引到底是啥，它的底层数据结构是什么样子的，是怎样加速查询的，索引本身又做了哪些优化。希望读完本文后，可以为你解决上述存留在心中的疑问。</p>
+<p>在这里也顺便提下个人对大数据的理解，大数据其实就是海量数据的存储和检索，前者关注于如何更高效的把数据放到存储介质上，后者关注于如何更高效的把数据从存储介质上检索出来，需要注意这里的检索指的是检查数据是否存在，如果数据存在则返回。而索引又是检索的核心，了解索引之后会对理解整个检索过程有更深刻的理解，比如执行计划的解析，join order 等等的影响。</p>
+<a id="more"></a>
+
+
+        <h4 id="数组和链表"   >
+          <a href="#数组和链表" class="heading-link"><i class="fas fa-link"></i></a>数组和链表</h4>
+      <p>数据和链表作为最基础的数据结构，往往也是被容易忽视的。但是却又非常重要，可以说我们接触的大部分索引结构都是由数组和链表结合而成的，比如位图本身就是以 bit 为单位的数据，再比如二叉查找树，红黑树，调表本身就是每个节点带多个指针的链表，再比如更高阶的 B+ 树，就是一个多叉树（带多个指针的链表），其每个节点又是一个数组，每层节点之间又会互相引用形成双向链表，再比如…….。</p>
+<p>可以看到就算在复杂的数据结构，其基本单元依然是数组和链表，只有了解数组和链表本身的特性以及查询原理才能更深入了解高阶的数据结构是如何加速查询的，以及如何从低阶数据结构转向高阶数据结构。</p>
+<p>首先看下数组，你认为的数组是什么呢，是存放元素的容器还是仅仅简单的列表。都不是，数组只是开辟在内存区域上的一块连续空间，有时候甚至不是物理连续的，但是一定具有逻辑连续性。因为在内存上具有连续性，所以数组具有随机访问的特性，并且由于内存局部性原理，在小数据量下具有更高的查询性能。</p>
+<p>tips：一般加载运行程序都是从外设中加载到内存，然后 cpu 在从内存中取出相应数据放到寄存器中，而现代 pc 一般都会有多层寄存器缓存，为了加速 cpu 运算，一般会把相邻内存空间区域下的数据也加载放入到缓存中。这样的话，下次则不需要再访问这些内存空间中的数据，而是直接加载 cpu 缓存即可。而数组正是应用了这个原理来实现的查询加速。</p>
+<p>数组在有序情况下，因为随机访问的特性，可以方便的利用二分查找来定位数据，这也是为何绝大多数查询，计算引擎（比如 mapreduce）为啥会有默认分区排序的原因。</p>
+<p>既然数组已经这么好了，为啥还需要链表呢？让我们思考这样的场景，数组放不下了该怎么办，答案是需要重新开辟空间，复制数据。再数据高频写入场景下，采用数组来存放数据显然不行，重新申请内存的开销太大。还有有序数据插入删除数据的时候，更不适合。这时候就需要链表出场了，链表通过指针的方式来连接每个元素，当需要插入删除时只需要修改对应节点的前后两个指针即可，极大的降低了增删改查的开销。但是链表的问题也随之而来，因为每个节点只能通过前置指针去访问，失去了随机访问的能力，即使在链表有序的情况下，也无法做到二分查找。</p>
+<p>好了，我们现在总结一下。</p>
+<p>数组随机访问，范围查询，基于内存的局部性原理在小数据规模下具有更良好的检索性能，但是插入删除开销比较大，尤其是在有序数组情况下。<br>链表增删方便，但是失去了随机访问能力，即使数据有序情况下，也无法提高检索性能。</p>
+<p>我们自己也可以思考下该如何改造链表使得其具有二分查找的能力呢？</p>
+
+        <h4 id="二叉查找树（BST-→-RBT-amp-跳表）"   >
+          <a href="#二叉查找树（BST-→-RBT-amp-跳表）" class="heading-link"><i class="fas fa-link"></i></a>二叉查找树（BST → RBT &amp; 跳表）</h4>
+      <p>基于上一节中的留给我们的问题，对链表进行了改造。也就是我们常说的 BST（二叉查找树），那到底是如何改造的呢。想想数组的二分查找是如何做的呢，先找到中间节点，在折半数组中接着找中间节点，直到定位到目标值或者遍历完为止。那链表该如何快速定位到中间节点呢，一个办法是每个节点除了指向下一个节点的指针，在额外增加一个指向中间节点的指针，那到了中间节点指针之后，还需要知道中间节点左右两边的中间节点指针（ps：此处有点绕口），那么中间节点也需要有前向指针。好了，到此处，我们应该明白了，为链表每个节点设置两个指针，左指针元素小于 &lt; 中间节点 &lt; 右指针元素。emmm，这样一个可以二分查找的有序链表就出来了，可以看到 BST 本身就是链表。</p>
+<p>通过上述链表改造，链表也可以二分查找了，具有更高效的检索能力了。但是所有情况下，BST 一定比普通链表查找快吗？非也，BST 在倾斜的情况下会退化成链表，所以为了解决倾斜问题，又衍生出来非常多的数据结构，比如红黑树（RBT），跳表，AVL 等。实际上就是在增删过程中应用一些规则尽可能的保持 BST 的平衡性。</p>
+<p>这里可以说下红黑树和跳表。</p>
+<p>红黑树大家应该相对熟悉，java 的 hashmap 就是数组+红黑树实现的，加入红黑树是为了解决大量哈希冲突下元素的检索性能。</p>
+<p>跳表和红黑树解决平衡性问题的思路就大相径庭了，不过熟悉 es，redis 中的人应该知道，比如 es 的倒排索引就是用跳表来加速检索的。跳表可以理解为对普通链表加上了高速缓存，即每个节点存在有多个指针指向后续节点（每个节点的指针个数称之为层数，层数会通过概率函数随机生成，这也是为了保证跳表的指针分布更加均匀）。在大数据规模下，跳表的实现相对于红黑树这些更加简单，且也能实现 O(logn) 的检索性能。</p>
+<p>这里在提个问题，跳表的增删节点怎么处理呢，毕竟每个节点都有可能指向同一个指针，难道需要全部指针都需要处理吗？</p>
+
+        <h4 id="哈希表"   >
+          <a href="#哈希表" class="heading-link"><i class="fas fa-link"></i></a>哈希表</h4>
+      <p>哈希表来了，我们想起 O(1) 时间复杂度的数据结构，第一个想起的总会是哈希表。那么哈希表是如何做到 O(1) 时间复杂度的呢。哈希表顾明思议是先哈希后落表。针对 int 类型的数据，我们可以开辟一个数组，int 是啥就在数据的哪个位置上放置该元素，当查询时，只需要通过数据的随机访问能力就可以快速查询到对应值以及对应值是否存在。针对 string 类型的数据，我们可以做编码处理转换成 int 值（这个过程也叫散列），举个例子，Tom，我们就可以按照 26 个字母的顺序进行编码，类似于二进制计算的方式将一个字符串转换为数值类型。当然散列函数的方法是多种多样的，这里就不过多赘述了。</p>
+<p>好了，现在我们已经明确哈希表就是数组实现的了。但是数组也是有限制的，不可能无限开辟连续内存的空间，因此一定会碰到哈希冲突。哈希冲突又有哪几种解决办法呢？开放寻址和链表法。</p>
+<p>开放寻址法，在碰到哈希冲突后，继续向后移寻找位置，容易造成位置抢占。或者通过多个 hash 函数来处理。<br>链表法，在碰到哈希冲突后，直接将冲突元素加到冲突节点上，形成链表。缺点是哈希冲突过多后，o(1) 的时间复杂度会退化成 o(n)，因为需要遍历链表。因此有些 hashmap 的实现会将链表达到一定规模后再进化成红黑树。</p>
+<p>哈希表具有 O(1) 的时间复杂度，看起来很美好，但是本质上是无序数组，失去了遍历能力，并且为了避免频繁的哈希冲突，一般还会预留额外空间（可以了解下装载因子），rehash 的代价也是比较大的。</p>
+<p>从上我们也可以看出，hash 表适合用于检测数据存在的场景，这点和布隆过滤器类似，只不过布隆过滤器的压缩比更好。此处也可以联想到 hashshuffle 和 hashjoin，都是采用的这种结构。</p>
+<p>问题又来了，哈希表的删除操作在开放寻址法和链表法下有啥不同呢？</p>
+
+        <h4 id="布隆过滤器"   >
+          <a href="#布隆过滤器" class="heading-link"><i class="fas fa-link"></i></a>布隆过滤器</h4>
+      <p>有了哈希表的 o(1)，为何还需要布隆过滤器。在大规模数据量下，哈希表所占用的内存空间极大，比如向一些基于 lsm 的引擎，比如 doris，druid ，kafka 这些，往往需要预判数据，如果采用哈希表做预判的话则会占用大量内存空间。那么布隆过滤器是如何做压缩的呢？</p>
+<p>一个数据结构的大小可以用（数据大小 * 数据个数） 来表达，布隆过滤器做的第一个优化就是该表数据大小，以 bit 为单位进行处理，因为往往我们做预判只是需要是否的概念，用0 和 1 就可以表达。第二个优化就是减少数据个数，利用 k 个哈希函数来对 k 个位置进行 bit 位赋值，这里的 k 的个数也是有一套算法在里面的。通过这样的方式极大大压缩了数据结构的大小。</p>
+<p>选用 k 个哈希函数也带了一定预判误差率，因为有可能一个没有的元素的 k 个位置都被置为了 1 bit。</p>
+<p>布隆过滤器常用于预判场景（在基于 lsm 引擎的 olap 中尤为常见），并且适合于高基维字段，这里可以自己思考下为什么适用于高基维呢？</p>
+
+        <h4 id="位图"   >
+          <a href="#位图" class="heading-link"><i class="fas fa-link"></i></a>位图</h4>
+      
+        <h4 id="倒排索引"   >
+          <a href="#倒排索引" class="heading-link"><i class="fas fa-link"></i></a>倒排索引</h4>
+      <p>倒排索引是啥？我们可以先想下正排索引是什么？举个例子类比，通过诗歌名找到诗歌是正排索引，通过诗歌内容找到包含所有该内容的诗歌名称是倒排索引。倒排索引是如何构建的。</p>
+<p>倒排索引常用于搜索引擎，比如 mysql 中的全文搜索，es 中的检索，都有倒排索引的出现。</p>
+
+        <h4 id="B-树-vs-LSM"   >
+          <a href="#B-树-vs-LSM" class="heading-link"><i class="fas fa-link"></i></a>B+树 vs LSM</h4>
+      <p>上面我们了解的很多数据结构，也可以说是索引都是放在内存中的（这里不严谨，也是可以落到磁盘的）。那么在大规模索引情况下，索引该如何下方到磁盘中，我们又该如何访问磁盘中的数据索引呢？B+ 树和 LSM 就是索引落盘的经典实现</p>
+
+        <h4 id="一些实际问题"   >
+          <a href="#一些实际问题" class="heading-link"><i class="fas fa-link"></i></a>一些实际问题</h4>
+      
+        <h4 id="小结"   >
+          <a href="#小结" class="heading-link"><i class="fas fa-link"></i></a>小结</h4>
+      <p>万丈高楼皆起于平地之间，技术如此，我们亦如此。</p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/83cc46f2/">https://timemachine.icu/posts/83cc46f2/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/%E6%95%B0%E6%8D%AE%E7%B4%A2%E5%BC%95/">数据索引</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/56052ea3/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Doris 物化视图</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/6796f734/"><span class="paginator-prev__text">工作中实践过的数据流架构</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E7%BB%84%E5%92%8C%E9%93%BE%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          数组和链表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8C%E5%8F%89%E6%9F%A5%E6%89%BE%E6%A0%91%EF%BC%88BST-%E2%86%92-RBT-amp-%E8%B7%B3%E8%A1%A8%EF%BC%89"><span class="toc-number">3.</span> <span class="toc-text">
+          二叉查找树（BST → RBT &amp; 跳表）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%93%88%E5%B8%8C%E8%A1%A8"><span class="toc-number">4.</span> <span class="toc-text">
+          哈希表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="toc-number">5.</span> <span class="toc-text">
+          布隆过滤器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%8D%E5%9B%BE"><span class="toc-number">6.</span> <span class="toc-text">
+          位图</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95"><span class="toc-number">7.</span> <span class="toc-text">
+          倒排索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#B-%E6%A0%91-vs-LSM"><span class="toc-number">8.</span> <span class="toc-text">
+          B+树 vs LSM</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E5%AE%9E%E9%99%85%E9%97%AE%E9%A2%98"><span class="toc-number">9.</span> <span class="toc-text">
+          一些实际问题</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">10.</span> <span class="toc-text">
+          小结</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/83cc46f2/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/83cc46f2/';
+        this.page.identifier = 'posts/83cc46f2/';
+        this.page.title = '漫谈数据库索引';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

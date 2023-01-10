@@ -1,0 +1,617 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言最近工作中越来越感受到监控对于查找问题的重要性，一个完备的链路监控对问题定位和趋势分析提效非常高。比如一条实时数据流，从数据采集到消费到入库各个阶段都有一些可观测性的指标（binlog 采集延迟，kafka-lag，读写 QPS，max-request-size，offset 趋势）。如果 kafka-lag 比较小并且 topic 写 QPS没打太高，但是数据有延迟，这里大概率就是上游采集的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Prometheus + Grafana 监控 - Kafka">
+<meta property="og:url" content="https://timemachine.icu/posts/dc1a86bd/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言最近工作中越来越感受到监控对于查找问题的重要性，一个完备的链路监控对问题定位和趋势分析提效非常高。比如一条实时数据流，从数据采集到消费到入库各个阶段都有一些可观测性的指标（binlog 采集延迟，kafka-lag，读写 QPS，max-request-size，offset 趋势）。如果 kafka-lag 比较小并且 topic 写 QPS没打太高，但是数据有延迟，这里大概率就是上游采集的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1grc1gm1u0qj31h80ltn0f.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsof789howj31h80hgtc5.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsofhrydl2j30r30p5gu0.jpg">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/kvw9u.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/j2f4h.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/4jj0i.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xvle5.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/lfzmz.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/wiyza.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/4vt7b.png">
+<meta property="article:published_time" content="2021-08-01T13:37:35.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.120Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Grafana">
+<meta property="article:tag" content="Prometheus">
+<meta property="article:tag" content="kafka_exporter">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1grc1gm1u0qj31h80ltn0f.jpg"><title>Prometheus + Grafana 监控 - Kafka | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/dc1a86bd/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">Prometheus + Grafana 监控 - Kafka</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-08-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">1.9k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">12分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>最近工作中越来越感受到监控对于查找问题的重要性，一个完备的链路监控对问题定位和趋势分析提效非常高。比如一条实时数据流，从数据采集到消费到入库各个阶段都有一些可观测性的指标（binlog 采集延迟，kafka-lag，读写 QPS，max-request-size，offset 趋势）。如果 kafka-lag 比较小并且 topic 写 QPS没打太高，但是数据有延迟，这里大概率就是上游采集的问题。<br>这里借用 prometheus 官网的话介绍监控的作用。</p>
+<ul>
+<li>长期趋势分析：通过对监控样本数据的持续收集和统计，对监控指标进行长期趋势分析。例如，通过对磁盘空间增长率的判断，我们可以提前预测在未来什么时间节点上需要对资源进行扩容。</li>
+<li>对照分析：两个版本的系统运行资源使用情况的差异如何？在不同容量情况下系统的并发和负载变化如何？通过监控能够方便的对系统进行跟踪和比较。</li>
+<li>告警：当系统出现或者即将出现故障时，监控系统需要迅速反应并通知管理员，从而能够对问题进行快速的处理或者提前预防问题的发生，避免出现对业务的影响。</li>
+<li>故障分析与定位：当问题发生后，需要对问题进行调查和处理。通过对不同监控监控以及历史数据的分析，能够找到并解决根源问题。</li>
+</ul>
+<p>本系列主要用来记录工作中常见系统的监控实现，指标含义以及如何通过监控定位问题并在相关任务挂掉后如何和给下游业务一个较准确的预估恢复时间。大部分借助开源实现。</p>
+<a id="more"></a>
+
+
+        <h3 id="Prometheus"   >
+          <a href="#Prometheus" class="heading-link"><i class="fas fa-link"></i></a>Prometheus</h3>
+      
+        <h4 id="安装"   >
+          <a href="#安装" class="heading-link"><i class="fas fa-link"></i></a>安装</h4>
+      <p>直接 brew 安装启动即可，也可以参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://yunlzheng.gitbook.io/prometheus-book" >prometheus 中文文档</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 通过预编译包安装。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">brew info prometheus</span><br><span class="line">brew install prometheus</span><br><span class="line">brew services start prometheus</span><br></pre></td></tr></table></div></figure>
+<p>在 prometheus.yml 里面配置抓取的 job。 需要注意一下，如果是 mac os 的话，Prometheus 默认配置文件地址为 <code>/usr/local/etc/prometheus.yml</code>。</p>
+
+        <h4 id="使用"   >
+          <a href="#使用" class="heading-link"><i class="fas fa-link"></i></a>使用</h4>
+      <p>安装完成后，可以打开 <code>http://localhost:9090/</code> 查看 Prometheus UI。可以在 Status-Targets 里面找到已经启动抓取的 exporter。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1grc1gm1u0qj31h80ltn0f.jpg"></p>
+<p>Prometheus 大概的流程如下。更多的信息可以查看官方文档。其中 PromQL 以及 metric 的格式需要重点了解下，以后查询 metrics，配置 Grafana DashBoard 都会用到。</p>
+<ul>
+<li>Prometheus server 定期从配置的 job 拉取 metrics。</li>
+<li>Prometheus 将拉取的 metrics 信息存储到本地，记录新的时间序列。如果触发定义好的 alert.rules，AlterManager 会向用户发送报警。</li>
+</ul>
+
+        <h4 id="需要注意的地方"   >
+          <a href="#需要注意的地方" class="heading-link"><i class="fas fa-link"></i></a>需要注意的地方</h4>
+      <p>使用 brew service 无法启动服务的话，可以去查看 xx.plist 文件中的 log 路径找具体错误。我这里就是碰到 9000 端口被其他代理服务占用，然后 prometheus 一直在 error 状态。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ brew services list | grep prometheus</span><br><span class="line">Name          Status  User   Plist</span><br><span class="line">prometheus    started zaoshu /Users/zaoshu/Library/LaunchAgents/homebrew.mxcl.prometheus.plist</span><br></pre></td></tr></table></div></figure>
+
+
+        <h3 id="Grafana"   >
+          <a href="#Grafana" class="heading-link"><i class="fas fa-link"></i></a>Grafana</h3>
+      
+        <h4 id="安装-1"   >
+          <a href="#安装-1" class="heading-link"><i class="fas fa-link"></i></a>安装</h4>
+      <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">brew info grafana</span><br><span class="line">brew install grafana</span><br><span class="line">brew services start grafana</span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="使用-1"   >
+          <a href="#使用-1" class="heading-link"><i class="fas fa-link"></i></a>使用</h4>
+      <p>打开 <code>http://localhost:3000/</code>，查看 Grafana UI，默认账户名密码是 admin/admin。使用流程和普通写程序差不多，全套 CURD。</p>
+<ol>
+<li>配置 DataSource</li>
+<li>配置 DashBoard，直接 load 模板或者自己通过 PromQL 配置。</li>
+<li>配置告警规则</li>
+</ol>
+
+        <h3 id="kafka-exporter"   >
+          <a href="#kafka-exporter" class="heading-link"><i class="fas fa-link"></i></a>kafka_exporter</h3>
+      <p>kafka_exporter 用来收集 Topic，Broker，ConsumerGroup 的相关信息，可以无缝对接 Prometheus 和 Grafana，使用起来比较方便。</p>
+
+        <h4 id="安装-2"   >
+          <a href="#安装-2" class="heading-link"><i class="fas fa-link"></i></a>安装</h4>
+      <p>查看对应的 github 项目 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/danielqsj/kafka_exporter" >kafka_exporter</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。在 release 页面中下载适合 mac os 的包（kafka_exporter-1.3.1.darwin-amd64.tar.gz<br>）。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/danielqsj/kafka_exporter/releases/download/v1.3.1/kafka_exporter-1.3.1.darwin-amd64.tar.gz -P /usr/<span class="built_in">local</span>/Cellar/kafka_exporter &amp;&amp; <span class="built_in">cd</span> /usr/<span class="built_in">local</span>/Cellar/kafka_exporter</span><br><span class="line">tar -xzvf kafka_exporter-1.3.1.darwin-amd64.tar.gz </span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="使用-2"   >
+          <a href="#使用-2" class="heading-link"><i class="fas fa-link"></i></a>使用</h4>
+      <p>启动 kafka 集群，执行启动脚本。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup kafka_exporter --kafka.server=localhost:9092 &gt;&gt; kafka_exporter.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></div></figure>
+<p>修改 prometheus.yml，加上 kafka_exporter 的 job。默认端口是 9308。</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">global:</span><br><span class="line">  scrape_interval: 15s</span><br><span class="line"></span><br><span class="line">scrape_configs:</span><br><span class="line">  - job_name: <span class="string">&quot;prometheus&quot;</span></span><br><span class="line">    static_configs:</span><br><span class="line">    - targets: [<span class="string">&quot;localhost:9095&quot;</span>]</span><br><span class="line">  - job_name: <span class="string">&quot;kafka_exporter&quot;</span></span><br><span class="line">    static_configs:</span><br><span class="line">    - targets: [<span class="string">&quot;localhost:9308&quot;</span>]</span><br><span class="line">  - job_name: <span class="string">&quot;canal&quot;</span></span><br><span class="line">    static_configs:</span><br><span class="line">    - targets: [<span class="string">&quot;localhost:11112&quot;</span>]</span><br></pre></td></tr></table></div></figure>
+<p>查看 prometheus ui，可以观察到已经启动抓取的 job。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsof789howj31h80hgtc5.jpg"><br>访问上图中的 Endpoint 地址（默认是 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://localhost:9308/metrics%EF%BC%89%EF%BC%8C%E5%8F%AF%E4%BB%A5%E6%9F%A5%E7%9C%8B%E5%B7%B2%E7%BB%8F%E6%8A%93%E5%8F%96%E5%88%B0%E7%9A%84%E6%8C%87%E6%A0%87%E3%80%82" >http://localhost:9308/metrics），可以查看已经抓取到的指标。</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span><br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/008i3skNly1gsofhrydl2j30r30p5gu0.jpg"></p>
+
+        <h4 id="指标列表"   >
+          <a href="#指标列表" class="heading-link"><i class="fas fa-link"></i></a>指标列表</h4>
+      <p>参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/danielqsj/kafka_exporter" >kafka_exporter</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 的 Readme。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>Metrics</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>kafka_brokers</td>
+<td>kafka 集群的 broker 数量</td>
+</tr>
+<tr>
+<td>kafka_topic_partitions</td>
+<td>kafka topic 的分区数</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_current_offset</td>
+<td>kafka topic 分区当前的 offset</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_oldest_offset</td>
+<td>kafka topic 分区最旧的 offset</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_in_sync_replica</td>
+<td>处于同步过程中的 topic/partition 数</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_leader</td>
+<td>topic/partition leader 的 broker id</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_leader_is_preferred</td>
+<td>topic/partition 是否使用 preferred broker</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_replicas</td>
+<td>topic/partition 的副本数</td>
+</tr>
+<tr>
+<td>kafka_topic_partition_under_replicated_partition</td>
+<td>partition 是否处于 replicated</td>
+</tr>
+<tr>
+<td>kafka_consumergroup_current_offset</td>
+<td>kakfa topic 消费者组的 offset</td>
+</tr>
+<tr>
+<td>kafka_consumergroup_lag</td>
+<td>kakfa-lag 消费延迟</td>
+</tr>
+</tbody></table></div>
+
+        <h4 id="遗留问题"   >
+          <a href="#遗留问题" class="heading-link"><i class="fas fa-link"></i></a>遗留问题</h4>
+      <p>如何使用 kafka_exporter 监控多集群？启动多个 kafka_exporter 实例还是有其他方式。</p>
+
+        <h3 id="Grafana-看板配置"   >
+          <a href="#Grafana-看板配置" class="heading-link"><i class="fas fa-link"></i></a>Grafana 看板配置</h3>
+      <p>关于 kafka，我们比较关注的是集群 broker 数量，topic 可用分区数，读写 QPS，partition offset，kafka-lag，吞吐量。<br>如果是第一次接触 Grafana 的话，建议直接导入模板，然后在模板基础上模仿修改最终达到自己想要的效果。<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://grafana.com/grafana/dashboards" >Grafana DashBoard</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。这里使用的模板是<br>7589。<br>tips：在使用 prometheus 作为数据源的时候，grafana 的 query 配置其实就是 promQL+指标+。比如（sum(kafka_topic_partitions{instance=<del>“$instance”,topic=</del>“$topic”})） </p>
+<ul>
+<li><p>创建 DashBoard，配置数据源，导入模板。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/kvw9u.png"><br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/j2f4h.png"></p>
+</li>
+<li><p>添加 consumergroup variable，方便查看每个消费者的 lag 和 offset 趋势。<br>参考模板的几个 variable 的配置。job -&gt; prometheus job。instance -&gt; kafka_exporter 实例。topic -&gt; kafka 主题。consumergroup -&gt; 消费者组。关于一些变量命名可以直接访问 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://localhost:9308/metrics" >http://localhost:9308/metrics</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 查看。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/4jj0i.png"></p>
+</li>
+<li><p>添加 broker，partition，吞吐量的 stat panal。<br>broker，partition 的指标 kafka_exporter 本身已经抓取到。<br>吞吐量其实就是 kafka_topic_partition_current_offset 的增长和 kafka_consumergroup_current_offset 的增长，这里使用 rate 来计算平均增长速率。</p>
+</li>
+<li><p>配置 kafka-lag panal 和报警。<br>使用 kafka_consumergroup_lag。<br>配置 Alert 的时候会报错 <code>template variables are not supported in alert queries</code>，这是因为 alert 不支持带变量的 metrics。添加 query，设置一个常量，并且设置为不可见即可。然后使用该不可见指标配置报警规则。<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/xvle5.png"><br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/lfzmz.png"></p>
+</li>
+<li><p>配置 offset 趋势。</p>
+</li>
+<li><p>配置 topic 的读写 QPS。<br>和吞吐量的算法一样。</p>
+</li>
+<li><p>配置 partition offset。</p>
+</li>
+</ul>
+<p>看板配置完成后，可以往 kafka topic 写入数据并启动 kafka-console-consumer 观察。因为我本地配置了 canal，所以直接 create_time + 1 触发了 binlog 到指定 topic。最后整体看板如下<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/wiyza.png"><br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/4vt7b.png"></p>
+
+        <h3 id="监控分析"   >
+          <a href="#监控分析" class="heading-link"><i class="fas fa-link"></i></a>监控分析</h3>
+      <p>kafka 广泛应用于实时作业中，所以对其的监控报警是必要的。上面配置的看板对于问题查看分析有什么作用呢？下面举几个典型的例子。</p>
+<ul>
+<li><p>kakfa topic 消费堆积<br>kafka-lag 是比较重要的性能指标。一般实时流任务的延迟，首先考虑到的就是消费堆积，此时需要查看是否刷数场景或者业务高峰期造成的短期堆积，是否需要临时加大消费者资源防止对下游业务使用造成影响。</p>
+</li>
+<li><p>kafka-lag 恢复时长估计<br>可以观察 consumergroup offset 的上升趋势，计算处理速度。</p>
+</li>
+<li><p>binlog 端到端延迟判断<br>需要结合 binlog 监控。如果没有 kafka-lag 且写 QPS 正常，一般是 canal 采集的问题。如果存在 kafka-lag 并且写入 QPS 比往常高很多，就要考虑刷数场景造成的堆积，进而产生 binlog 端到端延迟。</p>
+</li>
+<li><p>topic 分区是否均匀<br>观察 partition offset 和分 partition 写入 QPS。如果某个分区写入数据量很少，那么需要考虑分区 key 是否合理。不合理的分区对下游消费也会产生性能影响。</p>
+</li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/dc1a86bd/">https://timemachine.icu/posts/dc1a86bd/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Grafana/">Grafana</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Prometheus/">Prometheus</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/kafka-exporter/">kafka_exporter</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/fd7aaf9e/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">基于 gitbook 搭建笔记站点</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/c670d00d/"><span class="paginator-prev__text">Mac-Homebrew-常见问题</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Prometheus"><span class="toc-number">2.</span> <span class="toc-text">
+          Prometheus</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85"><span class="toc-number">2.1.</span> <span class="toc-text">
+          安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8"><span class="toc-number">2.2.</span> <span class="toc-text">
+          使用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9C%80%E8%A6%81%E6%B3%A8%E6%84%8F%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="toc-number">2.3.</span> <span class="toc-text">
+          需要注意的地方</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Grafana"><span class="toc-number">3.</span> <span class="toc-text">
+          Grafana</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-1"><span class="toc-number">3.1.</span> <span class="toc-text">
+          安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-1"><span class="toc-number">3.2.</span> <span class="toc-text">
+          使用</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#kafka-exporter"><span class="toc-number">4.</span> <span class="toc-text">
+          kafka_exporter</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-2"><span class="toc-number">4.1.</span> <span class="toc-text">
+          安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-2"><span class="toc-number">4.2.</span> <span class="toc-text">
+          使用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E5%88%97%E8%A1%A8"><span class="toc-number">4.3.</span> <span class="toc-text">
+          指标列表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%81%97%E7%95%99%E9%97%AE%E9%A2%98"><span class="toc-number">4.4.</span> <span class="toc-text">
+          遗留问题</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Grafana-%E7%9C%8B%E6%9D%BF%E9%85%8D%E7%BD%AE"><span class="toc-number">5.</span> <span class="toc-text">
+          Grafana 看板配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9B%91%E6%8E%A7%E5%88%86%E6%9E%90"><span class="toc-number">6.</span> <span class="toc-text">
+          监控分析</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/dc1a86bd/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/dc1a86bd/';
+        this.page.identifier = 'posts/dc1a86bd/';
+        this.page.title = 'Prometheus + Grafana 监控 - Kafka';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

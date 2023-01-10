@@ -1,0 +1,559 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言前面已经讲解了 Spark SQL 程序的入口，使用到的数据结构以及一些定义在上面的简单操作。那么我们工作中该如何将各种数据源中的数据转换成 Spark SQL 可以处理的数据结构进而进行各种计算呢？这就是本篇幅要讲解的 DataSource API（DataSource API 提供了读写各种数据源的 format，你甚至可以自定义 format 来连接外部数据源）。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DataSource API - Managing Datasets in External Data Sources">
+<meta property="og:url" content="https://timemachine.icu/posts/a5a69ed8/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言前面已经讲解了 Spark SQL 程序的入口，使用到的数据结构以及一些定义在上面的简单操作。那么我们工作中该如何将各种数据源中的数据转换成 Spark SQL 可以处理的数据结构进而进行各种计算呢？这就是本篇幅要讲解的 DataSource API（DataSource API 提供了读写各种数据源的 format，你甚至可以自定义 format 来连接外部数据源）。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd420l7p8vj305z08cgm1.jpg">
+<meta property="article:published_time" content="2020-03-23T06:18:17.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.120Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd420l7p8vj305z08cgm1.jpg"><title>DataSource API - Managing Datasets in External Data Sources | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/a5a69ed8/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">DataSource API - Managing Datasets in External Data Sources</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-03-23</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">2.7k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">23分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h2 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h2>
+      <p>前面已经讲解了 Spark SQL 程序的入口，使用到的数据结构以及一些定义在上面的简单操作。那么我们工作中该如何将各种数据源中的数据转换成 Spark SQL 可以处理的数据结构进而进行各种计算呢？这就是本篇幅要讲解的 DataSource API（DataSource API 提供了读写各种数据源的 format，你甚至可以自定义 format 来连接外部数据源）。</p>
+<a id="more"></a>
+
+
+        <h2 id="DataFrameReader"   >
+          <a href="#DataFrameReader" class="heading-link"><i class="fas fa-link"></i></a>DataFrameReader</h2>
+      <p>在 Spark 中，连接处理各种形式的数据源是通过 DataSource API 中的 DataFrameReader 接口来实现的。你可以使用 SparkSession 来创建一个 DataFrameReader。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">val</span> reader = spark.read</span><br><span class="line">reader: org.apache.spark.sql.<span class="type">DataFrameReader</span> = org.apache.spark.sql.<span class="type">DataFrameReader</span>@<span class="number">65067</span>d37</span><br><span class="line"><span class="type">DataFrameReader</span> 将数据源中的数据通过合适的 format 转换成 <span class="type">Spark</span> <span class="type">SQL</span> 可以处理的 <span class="type">DataFrame</span>。<span class="type">Spark</span> <span class="number">2.0</span> 提供了 textFile 方法，此时并不会返回 <span class="type">DataFrame</span>，而是 <span class="type">Dataset</span>[<span class="type">String</span>]</span><br><span class="line"></span><br><span class="line">scala&gt; reader.format(<span class="string">&quot;csv&quot;</span>).load(<span class="string">&quot;people.csv&quot;</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; reader.json.load(<span class="string">&quot;people.json&quot;</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; reader.textFile(<span class="string">&quot;get-pip.py&quot;</span>)</span><br><span class="line">res0: org.apache.spark.sql.<span class="type">Dataset</span>[<span class="type">String</span>] = [value: string]</span><br></pre></td></tr></table></div></figure>
+<p>下面 DataFrameReader 常见的接口</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>csv</td>
+<td>从 CSV 文件或者DataSet[String] 中读取 CSV 格式数据</td>
+<td><code>spark.read.csv(&quot;xxx.csv&quot;)</code></td>
+</tr>
+<tr>
+<td>format</td>
+<td>读取数据源的格式，允许自定义</td>
+<td><br><code>spark.read.foramt(&quot;csv&quot;)</code></br><br>spark.read.foramt(“json”)</br><br>spark.read.foramt(“custome source”)</br></td>
+</tr>
+<tr>
+<td>jdbc</td>
+<td>通过 JDBC 连接</td>
+<td></td>
+</tr>
+<tr>
+<td>json</td>
+<td>从 json 文件或者DataSet[String] 中读取 json 格式数据</td>
+<td><code>spark.read.json(&quot;*.json&quot;)</code></td>
+</tr>
+<tr>
+<td>load</td>
+<td>从数据源加载数据</td>
+<td><code>spark.read.foramt(&quot;csv&quot;).load(&quot;input_path&quot;)</code></td>
+</tr>
+<tr>
+<td>option</td>
+<td>设置加载数据源的一些可选项，比如不加载 CSV 的 header，指定分隔符等</td>
+<td>`spark.read.format(“csv”).option(“delimiter”,  “</td>
+</tr>
+<tr>
+<td>options</td>
+<td>接收 Map 来设置可选项</td>
+<td>`spark.read.format(“csv”).options(Map(“delimiter” → “</td>
+</tr>
+<tr>
+<td>orc</td>
+<td>orc 格式文件    spark.read.orc(input_path)</td>
+<td></td>
+</tr>
+<tr>
+<td>parquet</td>
+<td>parquet 格式文件，这也是 Spark 的默认 format 。可以通过 spark.sql.sources.default 更改</td>
+<td><code>spark.read.parquet(input_path)</code></td>
+</tr>
+<tr>
+<td>schema</td>
+<td>读取文件时指定 schema，schema 的生成后面会讲解</td>
+<td><code>spark.read.format(&quot;csv&quot;).schema(inferScheam)</code></td>
+</tr>
+<tr>
+<td>text</td>
+<td>读取文件，返回 DataFrame</td>
+<td></td>
+</tr>
+<tr>
+<td>textFile</td>
+<td>读取文件，返回 Dataset[String]</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p>tip：Spark read 数据并不会触发计算。</p>
+<p>Spark load 的路径可以是目录，并且支持通配符，Spark 会自动递归查找到目录下的所有文件 </p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">spark.read.csv(<span class="string">&quot;/data/sa_cluster/etl/*/*.csv&quot;</span>)</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line"><span class="type">Spark</span> <span class="number">2.2</span> 开始支持从 <span class="type">Dataset</span>[<span class="type">String</span>] 中加载数据。大概会有这样的场景，对格式不统一的数据先加载成 <span class="type">Dataset</span>[<span class="type">String</span>]，然后按 <span class="type">Row</span> 处理每行数据成标准格式，最后从 <span class="type">Dataset</span>[<span class="type">String</span>] 中读取格式化的数据。</span><br><span class="line">```scala</span><br><span class="line">scala&gt; <span class="keyword">val</span> people = <span class="type">Seq</span>(<span class="string">&quot;Mike, 40&quot;</span>).toDS</span><br><span class="line">people: org.apache.spark.sql.<span class="type">Dataset</span>[<span class="type">String</span>] = [value: string]</span><br><span class="line"></span><br><span class="line">scala&gt; spark.read.csv(people)</span><br><span class="line">res3: org.apache.spark.sql.<span class="type">DataFrame</span> = [_c0: string, _c1: string]</span><br><span class="line"></span><br><span class="line">scala&gt; spark.read.csv(people).show()</span><br><span class="line">+----+---+</span><br><span class="line">| _c0|_c1|</span><br><span class="line">+----+---+</span><br><span class="line">|<span class="type">Mike</span>| <span class="number">40</span>|</span><br><span class="line">+----+---+</span><br></pre></td></tr></table></div></figure>
+
+<p>tip：spark.readStream 用来读取流数据</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; spark.readStream</span><br><span class="line">res5: org.apache.spark.sql.streaming.<span class="type">DataStreamReader</span> = org.apache.spark.sql.streaming.<span class="type">DataStreamReader</span>@<span class="number">45354715</span></span><br></pre></td></tr></table></div></figure>
+
+
+        <h2 id="DataFrameWriter"   >
+          <a href="#DataFrameWriter" class="heading-link"><i class="fas fa-link"></i></a>DataFrameWriter</h2>
+      <p>DataFrameWriter 与 DataFrameReader 对应，将计算处理好的数据以各种数据格式存储。可以用处理好的 Dataset 直接创建。</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">val</span> writer = spark.range(<span class="number">5</span>).write</span><br><span class="line">writer: org.apache.spark.sql.<span class="type">DataFrameWriter</span>[<span class="type">Long</span>] = org.apache.spark.sql.<span class="type">DataFrameWriter</span>@<span class="number">1131</span>fcfd</span><br><span class="line"><span class="type">DataFrameWriter</span> 支持的 format 和 <span class="type">DataFrameReader</span> 是一样的。当然默认 format 还是 parquet 文件。 详细的 <span class="type">API</span> 可以去查看 org.apache.spark.sql.<span class="type">DataFrameWriter</span> 的源代码。可以去读一下 save 方法。里面告诉了我们直接将存入 <span class="type">Hive</span> 中是不允许的，最后的 save 的触发操作是由 runcommand 实现的。这里的一些逻辑我个人还没有搞清楚，仅仅是建议大家可以去读一下源代码。</span><br><span class="line"></span><br><span class="line">如果你想了解存储，actions 算子到底是如何触发计算，触发存储的，那么读源代码是一个很好的选择。</span><br><span class="line"></span><br><span class="line">scala&gt; writer.format(<span class="string">&quot;json&quot;</span>).save(<span class="string">&quot;id&quot;</span>)</span><br><span class="line"></span><br><span class="line">scala&gt; writer.json(<span class="string">&quot;id&quot;</span>)</span><br></pre></td></tr></table></div></figure>
+
+
+        <h2 id="DataSource-API-v2"   >
+          <a href="#DataSource-API-v2" class="heading-link"><i class="fas fa-link"></i></a>DataSource API v2</h2>
+      <p>在今天之前，我只是看到过 V1  V2这样的字眼。并没有详细了解过。这里只作为一个引路人的角色。</p>
+<p>先介绍几个概念</p>
+<ul>
+<li>列裁剪： 过滤掉查询不需要使用到的列。就是这样子的啦，select id, name from table。</li>
+<li>谓词下推 ：将过滤过程尽可能的推到底层，最好数据源端，这样子在执行阶段数据计算量就会相应变少。举个极端的例子，如果数据在上层才过滤，那么从读取到 fliter 都要保持着全表才可以，这无疑加大了计算量和资源消耗，我们希望的是读取出来的数据就是已经过滤的。<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; <span class="keyword">val</span> ds = spark.range(<span class="number">3</span>).withColumn(<span class="string">&quot;idPlus&quot;</span>, $<span class="string">&quot;id&quot;</span> + <span class="number">1</span>)</span><br><span class="line">ds: org.apache.spark.sql.<span class="type">DataFrame</span> = [id: bigint, idPlus: bigint]</span><br><span class="line"></span><br><span class="line">scala&gt; ds.select(<span class="string">&quot;idPlus&quot;</span>).filter($<span class="string">&quot;id&quot;</span> === <span class="number">1</span>).explain(<span class="literal">true</span>)</span><br><span class="line">== <span class="type">Parsed</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line"><span class="symbol">&#x27;Filter</span> (<span class="symbol">&#x27;id</span> = <span class="number">1</span>)</span><br><span class="line">+- <span class="type">Project</span> [idPlus#<span class="number">6</span>L]</span><br><span class="line">   +- <span class="type">Project</span> [id#<span class="number">4</span>L, (id#<span class="number">4</span>L + cast(<span class="number">1</span> as bigint)) <span class="type">AS</span> idPlus#<span class="number">6</span>L]</span><br><span class="line">      +- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">3</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Analyzed</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line">idPlus: bigint</span><br><span class="line"><span class="type">Project</span> [idPlus#<span class="number">6</span>L]</span><br><span class="line">+- <span class="type">Filter</span> (id#<span class="number">4</span>L = cast(<span class="number">1</span> as bigint))</span><br><span class="line">   +- <span class="type">Project</span> [idPlus#<span class="number">6</span>L, id#<span class="number">4</span>L]</span><br><span class="line">      +- <span class="type">Project</span> [id#<span class="number">4</span>L, (id#<span class="number">4</span>L + cast(<span class="number">1</span> as bigint)) <span class="type">AS</span> idPlus#<span class="number">6</span>L]</span><br><span class="line">         +- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">3</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Optimized</span> <span class="type">Logical</span> <span class="type">Plan</span> ==</span><br><span class="line"><span class="type">Project</span> [(id#<span class="number">4</span>L + <span class="number">1</span>) <span class="type">AS</span> idPlus#<span class="number">6</span>L]</span><br><span class="line">+- <span class="type">Filter</span> (id#<span class="number">4</span>L = <span class="number">1</span>)</span><br><span class="line">   +- <span class="type">Range</span> (<span class="number">0</span>, <span class="number">3</span>, step=<span class="number">1</span>, splits=<span class="type">Some</span>(<span class="number">4</span>))</span><br><span class="line"></span><br><span class="line">== <span class="type">Physical</span> <span class="type">Plan</span> ==</span><br><span class="line">*(<span class="number">1</span>) <span class="type">Project</span> [(id#<span class="number">4</span>L + <span class="number">1</span>) <span class="type">AS</span> idPlus#<span class="number">6</span>L]</span><br><span class="line">+- *(<span class="number">1</span>) <span class="type">Filter</span> (id#<span class="number">4</span>L = <span class="number">1</span>)</span><br><span class="line">   +- *(<span class="number">1</span>) <span class="type">Range</span> (<span class="number">0</span>, <span class="number">3</span>, step=<span class="number">1</span>, splits=<span class="number">4</span>)</span><br></pre></td></tr></table></div></figure>
+可以看到上面例子的 Optimized Logical Plan 。filter 被下推到了 project 前面 。</li>
+</ul>
+<p>Spark 1.3 为了提供一个统一的数据源 API 开始引入 DataSource V1。有了 DataSource V1，我们可以很方便的读取各种来源的数据，而且 Spark 使用 SQL 组件的一些优化引擎对数据源的读取进行优化，比如列裁剪、过滤下推等等。 你可以在  org.apache.spark.sql.source 中查看源代码。Spark SQL 的谓词下推是根据某些规则来的，并不是任何谓词任何条件下都会下推。</p>
+<p>既然 Datasource API 可以满足我们绝大多数的需求，那为什么又出来个 DataSource v2。主要是由于以下几点因素。</p>
+<p>Datasource API v1 依赖于一些上层 API，如 SqlContext 和 DataFrame。我们知道 Spark 2.x 里面 SqlContext 被 SparkSession 代替，DataFrame 被统一到 Dataset。上层 API 在不断更新发展，在 Datasource API v1 中确没有什么体现。<br>DataSource API v1 不支持列式读取。Spark SQL 引擎本身支持列式存储，但是在 DataSource API v1 里没有体现。<br>DataSource API v1 实现一些算子下推太过繁琐。比如 limit 下推，如果实现的话，就是一大推接口，TableScan，PrunedScan<br>DataSource API v1 缺乏分区和排序信息。数据源的分区和排序信息并不能传递给 Spark 优化器<br>DataSource API v1 不支持流处理<br>DataSource API v1 写操作不支持事务。比如，像 Mysql 中存入数据过程中发生异常，已经存进去的数据不会被清理，破坏数据的一致性。需要引入事务。<br>DataSource API v2 应运而生，可以简单看下，v2 基本已经解决了上述的问题，支持自定义分区信息。</p>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/00831rSTly1gd420l7p8vj305z08cgm1.jpg"></p>
+<p>这里直接用一个网上 DataSource v2 API 读取 MySQL 数据的例子，来看看如何自定义你的 format，实现你的读写逻辑，谓词下推。</p>
+<p>通过 DataSource API v2 的 ReadSupport 接口来实现自定义数据源 reader，这里是读取 Mysql，如果是写 Mysql 需要 WriteSupport</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> mysqlReader</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.sources.v2.reader.<span class="type">DataSourceReader</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.sources.v2.&#123;<span class="type">DataSourceOptions</span>, <span class="type">DataSourceV2</span>, <span class="type">ReadSupport</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> scala.collection.<span class="type">JavaConverters</span>._</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DefaultSource</span> <span class="keyword">extends</span> <span class="title">DataSourceV2</span> <span class="keyword">with</span> <span class="title">ReadSupport</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">createReader</span></span>(options: <span class="type">DataSourceOptions</span>): <span class="type">DataSourceReader</span> = &#123;</span><br><span class="line">    <span class="type">MySQLSourceReader</span>(options.asMap().asScala.toMap)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+<p>通过 DatasourceReader 具体实现读操作，读取的 scheam，列裁剪，支持的谓词下推，分区信息都可以在这里重写</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> mysqlReader</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.catalyst.<span class="type">InternalRow</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.execution.datasources.jdbc.&#123;<span class="type">JDBCOptions</span>, <span class="type">JDBCRDD</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.sources.v2.reader.&#123;<span class="type">DataSourceReader</span>, <span class="type">InputPartition</span>, <span class="type">SupportsPushDownFilters</span>, <span class="type">SupportsPushDownRequiredColumns</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.sources.&#123;<span class="type">EqualTo</span>, <span class="type">Filter</span>, <span class="type">GreaterThan</span>, <span class="type">IsNotNull</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types.<span class="type">StructType</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> scala.collection.<span class="type">JavaConverters</span>._</span><br><span class="line"><span class="keyword">import</span> scala.collection.mutable.<span class="type">ArrayBuffer</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">MySQLSourceReader</span>(<span class="params">options: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>]</span>) <span class="keyword">extends</span> <span class="title">DataSourceReader</span> <span class="keyword">with</span> <span class="title">SupportsPushDownFilters</span></span></span><br><span class="line"><span class="class">  <span class="keyword">with</span> <span class="title">SupportsPushDownRequiredColumns</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">val</span> supportedFilters: <span class="type">ArrayBuffer</span>[<span class="type">Filter</span>] = <span class="type">ArrayBuffer</span>[<span class="type">Filter</span>]()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> requiredSchema: <span class="type">StructType</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> jdbcOptions = <span class="keyword">new</span> <span class="type">JDBCOptions</span>(options)</span><br><span class="line">    <span class="type">JDBCRDD</span>.resolveTable(jdbcOptions)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">readSchema</span></span>(): <span class="type">StructType</span> = &#123;</span><br><span class="line">    requiredSchema</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">planInputPartitions</span></span>(): util.<span class="type">List</span>[<span class="type">InputPartition</span>[<span class="type">InternalRow</span>]] = &#123;</span><br><span class="line">    <span class="type">List</span>[<span class="type">InputPartition</span>[<span class="type">InternalRow</span>]](<span class="type">MySQLInputPartition</span>(requiredSchema, supportedFilters.toArray, options)).asJava</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">pushFilters</span></span>(filters: <span class="type">Array</span>[<span class="type">Filter</span>]): <span class="type">Array</span>[<span class="type">Filter</span>] = &#123;</span><br><span class="line">    <span class="keyword">if</span> (filters.isEmpty) &#123;</span><br><span class="line">      <span class="keyword">return</span> filters</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> unsupportedFilters = <span class="type">ArrayBuffer</span>[<span class="type">Filter</span>]()</span><br><span class="line">    filters foreach &#123;</span><br><span class="line">      <span class="keyword">case</span> f: <span class="type">EqualTo</span> =&gt; supportedFilters += f</span><br><span class="line">      <span class="keyword">case</span> f: <span class="type">GreaterThan</span> =&gt; supportedFilters += f</span><br><span class="line">      <span class="keyword">case</span> f: <span class="type">IsNotNull</span> =&gt; supportedFilters += f</span><br><span class="line">      <span class="keyword">case</span> f@_ =&gt; unsupportedFilters += f</span><br><span class="line">    &#125;</span><br><span class="line">    unsupportedFilters.toArray</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">pushedFilters</span></span>(): <span class="type">Array</span>[<span class="type">Filter</span>] = supportedFilters.toArray</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">pruneColumns</span></span>(requiredSchema: <span class="type">StructType</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">this</span>.requiredSchema = requiredSchema</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+<p>InputPartitionReader 实现具体的分区读取操作</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> mysqlReader</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.&#123;<span class="type">DriverManager</span>, <span class="type">ResultSet</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.catalyst.<span class="type">InternalRow</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.catalyst.util.<span class="type">DateTimeUtils</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.jdbc.<span class="type">JdbcDialects</span></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.sources.v2.reader.&#123;<span class="type">InputPartition</span>, <span class="type">InputPartitionReader</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.sources.&#123;<span class="type">EqualTo</span>, <span class="type">Filter</span>, <span class="type">GreaterThan</span>, <span class="type">IsNotNull</span>&#125;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.unsafe.types.<span class="type">UTF8String</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">MySQLInputPartition</span>(<span class="params">requiredSchema: <span class="type">StructType</span>, pushed: <span class="type">Array</span>[<span class="type">Filter</span>], options: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>]</span>)</span></span><br><span class="line"><span class="class">  <span class="keyword">extends</span> <span class="title">InputPartition</span>[<span class="type">InternalRow</span>] </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">createPartitionReader</span></span>(): <span class="type">InputPartitionReader</span>[<span class="type">InternalRow</span>] = &#123;</span><br><span class="line">    <span class="type">MySQLInputPartitionReader</span>(requiredSchema, pushed, options)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">MySQLInputPartitionReader</span>(<span class="params">requiredSchema: <span class="type">StructType</span>, pushed: <span class="type">Array</span>[<span class="type">Filter</span>], options: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>]</span>)</span></span><br><span class="line"><span class="class">  <span class="keyword">extends</span> <span class="title">InputPartitionReader</span>[<span class="type">InternalRow</span>] </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">val</span> tableName = options(<span class="string">&quot;dbtable&quot;</span>)</span><br><span class="line">  <span class="keyword">val</span> driver = options(<span class="string">&quot;driver&quot;</span>)</span><br><span class="line">  <span class="keyword">val</span> url = options(<span class="string">&quot;url&quot;</span>)</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">initSQL</span> </span>= &#123;</span><br><span class="line">    <span class="keyword">val</span> selected = <span class="keyword">if</span> (requiredSchema.isEmpty) <span class="string">&quot;1&quot;</span> <span class="keyword">else</span> requiredSchema.fieldNames.mkString(<span class="string">&quot;,&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (pushed.nonEmpty) &#123;</span><br><span class="line">      <span class="keyword">val</span> dialect = <span class="type">JdbcDialects</span>.get(url)</span><br><span class="line">      <span class="keyword">val</span> filter = pushed.map &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="type">EqualTo</span>(attr, value) =&gt; <span class="string">s&quot;<span class="subst">$&#123;dialect.quoteIdentifier(attr)&#125;</span> = <span class="subst">$&#123;dialect.compileValue(value)&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">case</span> <span class="type">GreaterThan</span>(attr, value) =&gt; <span class="string">s&quot;<span class="subst">$&#123;dialect.quoteIdentifier(attr)&#125;</span> &gt; <span class="subst">$&#123;dialect.compileValue(value)&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">case</span> <span class="type">IsNotNull</span>(attr) =&gt; <span class="string">s&quot;<span class="subst">$&#123;dialect.quoteIdentifier(attr)&#125;</span> IS NOT NULL&quot;</span></span><br><span class="line"></span><br><span class="line">      &#125;.mkString(<span class="string">&quot; AND &quot;</span>)</span><br><span class="line"></span><br><span class="line">      <span class="string">s&quot;select <span class="subst">$selected</span> from <span class="subst">$tableName</span> where <span class="subst">$filter</span>&quot;</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="string">s&quot;select <span class="subst">$selected</span> from <span class="subst">$tableName</span>&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">val</span> rs: <span class="type">ResultSet</span> = &#123;</span><br><span class="line">    <span class="type">Class</span>.forName(driver)</span><br><span class="line">    <span class="keyword">val</span> conn = <span class="type">DriverManager</span>.getConnection(url)</span><br><span class="line">    println(initSQL)</span><br><span class="line">    <span class="keyword">val</span> stmt = conn.prepareStatement(initSQL, <span class="type">ResultSet</span>.<span class="type">TYPE_FORWARD_ONLY</span>, <span class="type">ResultSet</span>.<span class="type">CONCUR_READ_ONLY</span>)</span><br><span class="line">    stmt.setFetchSize(<span class="number">1000</span>)</span><br><span class="line">    stmt.executeQuery()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">next</span></span>(): <span class="type">Boolean</span> = rs.next()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">get</span></span>(): <span class="type">InternalRow</span> = &#123;</span><br><span class="line">    <span class="type">InternalRow</span>(requiredSchema.fields.zipWithIndex.map &#123; element =&gt;</span><br><span class="line">      element._1.dataType <span class="keyword">match</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="type">IntegerType</span> =&gt; rs.getInt(element._2 + <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">case</span> <span class="type">LongType</span> =&gt; rs.getLong(element._2 + <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">case</span> <span class="type">StringType</span> =&gt; <span class="type">UTF8String</span>.fromString(rs.getString(element._2 + <span class="number">1</span>))</span><br><span class="line">        <span class="keyword">case</span> e: <span class="type">DecimalType</span> =&gt; <span class="keyword">val</span> d = rs.getBigDecimal(element._2 + <span class="number">1</span>)</span><br><span class="line">          <span class="type">Decimal</span>(d, d.precision, d.scale)</span><br><span class="line">        <span class="keyword">case</span> <span class="type">TimestampType</span> =&gt; <span class="keyword">val</span> t = rs.getTimestamp(element._2 + <span class="number">1</span>)</span><br><span class="line">          <span class="type">DateTimeUtils</span>.fromJavaTimestamp(t)</span><br><span class="line"></span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">    &#125;: _*)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">close</span></span>(): <span class="type">Unit</span> = rs.close()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+<p>使用自定义的 format 读取 Mysql 数据库</p>
+<figure class="highlight scala"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SparkSession</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">test</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> spark = <span class="type">SparkSession</span>.builder().appName(<span class="string">&quot;MySQL&quot;</span>).master(<span class="string">&quot;local[*]&quot;</span>).getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line"></span><br><span class="line">    spark.read</span><br><span class="line">      .format(<span class="string">&quot;mysqlReader&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;url&quot;</span>, <span class="string">&quot;jdbc:mysql://127.0.0.1:3306/fangtianxia?user=root&amp;password=123456789&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;dbtable&quot;</span>, <span class="string">&quot;newfangdetail&quot;</span>)</span><br><span class="line">      .option(<span class="string">&quot;driver&quot;</span>, <span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>)</span><br><span class="line">      .load()</span><br><span class="line">      .selectExpr(<span class="string">&quot;url_name&quot;</span>, <span class="string">&quot;score&quot;</span>)</span><br><span class="line">      .filter($<span class="string">&quot;url_name&quot;</span>.equalTo(<span class="string">&quot;121119&quot;</span>) &amp;&amp; $<span class="string">&quot;score&quot;</span> &gt;= <span class="string">&quot;3.6&quot;</span>)</span><br><span class="line">      .explain(<span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+<p>执行后，可以看到执行的物理计划如下，equalTo 被下推到数据源端，而 &gt;= 没有被下推，因为我们自定义的 pushedFilter 中不支持 &gt;= 下推</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x3D;&#x3D; Physical Plan &#x3D;&#x3D;</span><br><span class="line">*(1) Project [url_name#3, score#11]</span><br><span class="line">+- *(1) Filter (score#11 &gt;&#x3D; 3.6)</span><br><span class="line">   +- *(1) ScanV2 DefaultSource[url_name#3, score#11] (Filters: [isnotnull(url_name#3), isnotnull(score#11), (url_name#3 &#x3D; 121119)], Options: [dbtable&#x3D;newfangdetail,driver&#x3D;com.mysql.jdbc.Driver,url&#x3D;*********(redacted),paths&#x3D;[]])</span><br></pre></td></tr></table></div></figure>
+
+
+        <h2 id="本文参考"   >
+          <a href="#本文参考" class="heading-link"><i class="fas fa-link"></i></a>本文参考</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/83006243" >一文理解 Apache Spark DataSource V2 诞生背景及入门实战</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/a5a69ed8/">https://timemachine.icu/posts/a5a69ed8/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Spark/">Spark</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/4374198/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">Schema - Describe Structure of Data</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/5d48686a/"><span class="paginator-prev__text">Row &amp;&amp; Column - Compose &quot;Tabular Data Set&quot;</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DataFrameReader"><span class="toc-number">2.</span> <span class="toc-text">
+          DataFrameReader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DataFrameWriter"><span class="toc-number">3.</span> <span class="toc-text">
+          DataFrameWriter</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DataSource-API-v2"><span class="toc-number">4.</span> <span class="toc-text">
+          DataSource API v2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AC%E6%96%87%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">
+          本文参考</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/a5a69ed8/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/a5a69ed8/';
+        this.page.identifier = 'posts/a5a69ed8/';
+        this.page.title = 'DataSource API - Managing Datasets in External Data Sources';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

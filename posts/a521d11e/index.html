@@ -1,0 +1,776 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言观察 flink-doris-connector 和 RoutineLoad 的数据摄入情况，包括 kafka消费速率、doris 集群情况、doris 数据导入速率、各种调参造成的性能波动、不同 doris 表数据模型以及数据处理语义对导入性能的影响。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="doris实时数据摄入测试">
+<meta property="og:url" content="https://timemachine.icu/posts/a521d11e/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言观察 flink-doris-connector 和 RoutineLoad 的数据摄入情况，包括 kafka消费速率、doris 集群情况、doris 数据导入速率、各种调参造成的性能波动、不同 doris 表数据模型以及数据处理语义对导入性能的影响。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kakfa_metrics_dup_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_dup_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_dup_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_dup_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_dup_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_dup_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_agg_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_agg_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_agg_1.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_agg_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_agg_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_agg_2.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_routinload.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_routinload.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_csv.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/flink_webui_doris_json.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/flink_webui_doris_2.png">
+<meta property="article:published_time" content="2022-05-03T03:12:11.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.124Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="Doris">
+<meta property="article:tag" content="StarRocks">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kakfa_metrics_dup_2.png"><title>doris实时数据摄入测试 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/a521d11e/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">doris实时数据摄入测试</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-05-03</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">3.1k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">19分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>观察 flink-doris-connector 和 RoutineLoad 的数据摄入情况，包括 kafka消费速率、doris 集群情况、doris 数据导入速率、各种调参造成的性能波动、不同 doris 表数据模型以及数据处理语义对导入性能的影响。</p>
+<a id="more"></a>
+
+
+        <h3 id="性能测试"   >
+          <a href="#性能测试" class="heading-link"><i class="fas fa-link"></i></a>性能测试</h3>
+      <p>以下测试均为从 earliest 消费同一测试 topic（测试流量维持在 4w qps 左右，晚高峰在 8w qps。），逻辑是简单的 source → map → sink，即读取 kafka 数据进行简单的字段提取后就发往 doris。暂时忽略掉不同时间点 source 数据流量的差异。</p>
+<p>初始 Flink 资源：</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>slot</th>
+<th>TM</th>
+<th>JM Memory</th>
+<th>TM Memory</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3</td>
+<td>3</td>
+<td>2048</td>
+<td>2048</td>
+</tr>
+</tbody></table></div>
+<p>需要观测的指标：</p>
+<ul>
+<li>Kafka Topic 的写入及消费情况。</li>
+<li>Flink 任务的内存、cpu 使用，checkpoint的完成情况及整体的吞吐。</li>
+<li>Doris 集群 CPU ，内存，磁盘，网络 IO的情况。</li>
+<li>Doris 表的数据摄入速率。</li>
+<li>Doris 表后端 compaction 进程对摄入的影响。</li>
+</ul>
+<p>针对每一种表模型的测试步骤：</p>
+<ul>
+<li>初始资源运行，观察所有相关的监控。</li>
+<li>单独调整 slot，翻倍，观察任务情况。</li>
+<li>单独调整内存，翻倍，观察任务情况。</li>
+<li>根据 2，3步任务吞吐量是否线性增长，混合调整 slot 和内存，验证想法。</li>
+<li>根据数据大小以及 kafka 写入 QPS预估调整 sink.buffer.* 参数是否会有作用，如果有作用，调整之，观察任务吞吐量。</li>
+<li>根据最终确定较优参数，启动测试任务运行观察 1~2 天。</li>
+<li>调整数据处理语义到 extractly-once，再次启动测试任务运行观察 1~2 天。</li>
+</ul>
+
+        <h4 id="duplicate-表"   >
+          <a href="#duplicate-表" class="heading-link"><i class="fas fa-link"></i></a>duplicate 表</h4>
+      <p>新建 duplicate 表 imp_flow_dup_small_test，三列数据，单条数据大小为 66 bytes。。测试导入。18:06 ~ 18:40 分别以 3，6，12，20 个slot 启动任务，整个任务的吞吐分别为 18w/s，40w/s，73w/s，86w/s，基本呈线性增长。18:40 ~ 18:50 调整回 3个 slot，分别以 4096，8192 内存运行，吞吐量无明显变化，20w/s 左右。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kakfa_metrics_dup_2.png"></td>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_dup_2.png"></td>
+</tr>
+</tbody></table></div>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_dup_2.png" align='left' width="50%" height="50%"></td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p>新建 duplicate 表 imp_flow_dup_big_test，五十列左右数据，单条数据 855 bytes。测试导入。21:30 ~ 22:04 分别以 3，6，12，20 个slot 启动任务，吞吐量分别为 10w/s，23w/s，43w/s，43w/s，在并发达到 12 个及以上后，可以看到处理速度陡降的现象，这是任务挂掉了，触发了 close index channel failed 和 index channel has intoleralbe failure，此时需要关注下集群表数据版本合并情况。</p>
+<p>22:04 ~ 22:15 以 3个slot，内存分别为 4096，8192 启动任务，处理速度 11w/s，有 5% ~ 10% 的增加。<br>22:15 ~ 22:20 更改 flush_interval=1000ms，可以看到没啥作用，整个任务的吞吐没啥变化，另外还有个评估标准，观察导入次数和导入函数，可以看到在导入次数翻倍的情况下，吞吐量仍然没有变化，说明调整没啥作用，可以通过观察导入监控，反复修改参数测试出来单次 stream load 最大的处理量。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_dup_1.png"></td>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_dup_1.png"></td>
+</tr>
+</tbody></table></div>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_dup_1.png" align='left' width="50%" height="50%"></td>
+<td></td>
+</tr>
+</tbody></table></div>
+
+        <h4 id="agg-表"   >
+          <a href="#agg-表" class="heading-link"><i class="fas fa-link"></i></a>agg 表</h4>
+      <p>新建 agg 表 imp_flow_agg_small_test，key 列 5 个，一个bitmap 列，一个 HLL 列，一个 SUM 列，单条数据 158 bytes 左右。测试导入。2021-12-05 10:39 ~ 2021-12-05 11:20。任务每秒吞吐量在 16w 左右，随 slot 线性增长。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_agg_1.png"></td>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_agg_1.png"></td>
+</tr>
+</tbody></table></div>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_agg_1.png" align='left' width="50%" height="50%"></td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p>新建 agg 表 imp_flow_agg_big_test，key 列在 40 个左右，混合 bitmap，HLL，sum 指标列，单条数据在 1274 bytes 左右。22:05~22:15 3 个 slot 启动导入，吞吐量在 6w/s。22:15 ~ 22:25 增加到 6 个 slot，吞吐量在 13w/s。</p>
+<p>22:25 ~ 22:30 增加到 12 个slot，吞吐量在 26w/s，持续几分钟后触发 <code>close index channel failed</code>，导入频率太快，compaction 没能及时合并导致版本数过多，增量合并数据组达到 300 版本/s。随着吞吐量的增加，cpu 平均使用率线性上升。</p>
+<p>22:50 ~ 23:00，调回 3个 slot，增大 TM 内存到 4096M，吞吐量无明显上升，继续增大到 8192M，吞吐量还是无明显上升，单纯增大内存不起作用。11:06 ~ 11:20，调整为 6个 slot，4096M，整个任务的吞吐量在 13w/s，和单纯调整 slot 数差不多。</p>
+<p>23:30后以 4 个 slot启动整个任务，平常没有问题，到达流量高峰期后，任务吞吐量达到 8w/s 后，stream load 开始频繁报错进而导致整个任务失败，调整到 3个 slot 后，任务平稳运行，但是写入 qps 比较高，导致任务已经追不上最新 offset。按照官网 FAQ 调整 BE rpc 超时参数，重启 doris 集群后，分别 4~6 个 slot 运行，仍然会有此问题。整个 droris 集群在此期间只有网络 io 繁忙，暂时怀疑和表的分区分片及 compaction 有关系，因为只是测试，简单的设置后 hash(adpos_id) 5个分桶，导致某台节点上的网络压力比较高。</p>
+<p>这里没有调节 sink-buffer 系列参数，因为意义不太大，单条数据 1274 bytes，写入 6w qps 的情况下分钟内就可以达到默认的 buffer.max.size 阈值。</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_agg_2.png"></td>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/stream_load_agg_2.png"></td>
+</tr>
+</tbody></table></div>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_agg_2.png" align='left' width="50%" height="50%"></td>
+<td></td>
+</tr>
+</tbody></table></div>
+
+        <h4 id="uniq-表"   >
+          <a href="#uniq-表" class="heading-link"><i class="fas fa-link"></i></a>uniq 表</h4>
+      <p>新建 uniq 表 imp_flow_uniq_big_test，以某张后续链路 binlog 表为例，从 earliest 开始消费，2w/s 的吞吐。</p>
+
+        <h4 id="exactly-once-测试"   >
+          <a href="#exactly-once-测试" class="heading-link"><i class="fas fa-link"></i></a>exactly-once 测试</h4>
+      <p>观察精确一次语义情况下 flink 的资源消耗，此时 doris 摄入完全依赖于每次 checkpoint 的完成。</p>
+<p>不适合流量数据，有两点原因：</p>
+<ul>
+<li>json 数据单次最大导入数据 100M。</li>
+<li>不同时间节点 QPS 的变化造成 checkpoint 存在过大的情况且累计的数据超过 100M导致发送失败。<br>理论上来说，利用 checkpoint 保证 kafka 精确处理一次 + stream load 的事务保证即可。如果需要使用 checkpoint，可以通过以下方式评估，但是只要涉及到历史数据回溯就会挂。</li>
+<li>在 chekpoint interval （最小 10ms）时间内积累的数据量有多大，即 checkpoint interval * 写入 qps * 单条 json 数据大小。</li>
+</ul>
+
+        <h4 id="flink2doris-csv，json-格式导入及-RoutineLoad-对比"   >
+          <a href="#flink2doris-csv，json-格式导入及-RoutineLoad-对比" class="heading-link"><i class="fas fa-link"></i></a>flink2doris csv，json 格式导入及 RoutineLoad 对比</h4>
+      <p>新建 imp_flow_dup_routine_test，和 imp_flow_dup_big_test 表结构一样。以  RoutineLoad 方式导入 imp_flow_dup_routine_test 表，分别以 csv，json 格式导入 imp_flow_dup_bug_test 表。观察整个任务的吞吐。</p>
+<ul>
+<li>csv 与 json 相比，单条数据大小减少了 2/3，吞吐提升了 1/4。</li>
+<li>RoutineLoad 的处理速度平均在 18.5w/s，默认启动 3个 task。task 个数的计算逻辑如下：<code>Min(partition num, desired_concurrent_number, alive_backend_num, Config.max_routine_load_task_concurrrent_num)</code>。</li>
+</ul>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_routinload.png"></td>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/doris_cpu_routinload.png"></td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>flink2doris csv 格式只有 10w/s 。</li>
+</ul>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/kafka_metrics_csv.png" align='left' width="50%" height="50%"></td>
+<td></td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>flink2doris json 8w/s，从 sink 端开始反压</li>
+</ul>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/flink_webui_doris_json.png"></td>
+<td><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/blog-doris_realtime_ingest/flink_webui_doris_2.png"></td>
+</tr>
+</tbody></table></div>
+
+        <h4 id="集群参数调整测试"   >
+          <a href="#集群参数调整测试" class="heading-link"><i class="fas fa-link"></i></a>集群参数调整测试</h4>
+      <p>修改导入相关的 BE，FE 参数，测试对导入速率以及集群性能的影响。这块相对来说，需要对 doris 的摄入原理有一定的认识，即 doris 的整个数据摄入过程是什么样子的。</p>
+<ul>
+<li>BE 参数<ul>
+<li>streaming_load_rpc_max_alive_time_sec。</li>
+<li>tablet_writer_rpc_timeout_sec。</li>
+<li>write_buffer_size。</li>
+</ul>
+</li>
+</ul>
+
+        <h3 id="遇到的一些测试问题"   >
+          <a href="#遇到的一些测试问题" class="heading-link"><i class="fas fa-link"></i></a>遇到的一些测试问题</h3>
+      <ol>
+<li><p>flink-doris-connector 的实现原理？<br>读取数据缓存在内存中，在 at-least-once 处理语义下，到达某些阈值后（通过 sink.buffer.flush.* 系列参数控制），通过 stream load 发送到 doris。在 exactly-once 语义下，数据缓存在状态中，每次进行 checkponit 时 flush 数据。</p>
+</li>
+<li><p>flink-doris-connector 依赖的引入？<br>有两种方式，一种是从 dorisdb 私库拉取，可以参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://doc.dorisdb.com/2166258" >flink-doris-connector 官方文档</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。另一种是从中央仓库拉取，参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/StarRocks/flink-connector-starrocks" >flink-connector-starrocks</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 官方 repo，同时需要额外引入 flink-table-api 的相关依赖。建议第二种方式。</p>
+</li>
+<li><p>数据处理语义问题，at-least-once 和 extratly-once 分别会引入什么样的问题？</p>
+</li>
+</ol>
+<ul>
+<li>at-least-once → 可能会引起 duplicate 表的数据重复，需要明确下任务失败重启时，已经在内存中但是还没有达到阈值的数据是会丢弃还是立即发送到下游？</li>
+<li>exactly-once → 需要外部系统的 two phase commit 机制。由于 DorisDB 无此机制，需要依赖 flink 的 checkpoint-interval 在每次 checkpoint 时保存已经缓存的数据组及其label，在之后的数据传入时阻塞 flush 所有 state 中已经缓存的数据，以此达到精准一次。但如果DorisDB挂掉了，会导致用户的 flink sink stream 算子长时间阻塞，并引起 flink 的监控报警或强制 kill。</li>
+</ul>
+<ol start="4">
+<li>字段的映射问题，json stream_load 的顺序问题。有时候某些字段没解析出来？<br>connector 底层实现是微批 stream load。而 stream load 提供了 columns 参数用于处理字段映射，可以借助这个参数来实现。只要在 columns 中引入数据转换，必须依赖顺序，即 jsonpaths 参数，否则字段映射就会错误。需要在 flink 逻辑中保证顺序。</li>
+</ol>
+
+        <h3 id="测试结论"   >
+          <a href="#测试结论" class="heading-link"><i class="fas fa-link"></i></a>测试结论</h3>
+      <p>任务的吞吐量大小的衡量可以简单通过  <code>slot个数 * 单个 slot 的 sink 数据大小  /  sink单条数据大小</code> 来表达，单条数据越大，slot 的吞吐就越小。在单个 slot 到达瓶颈后，要想增加整个任务的吞吐，只能调整 slot 数量。但是随着 slot 数量的增加，吞吐到达某个阈值后，就会存在稳定性的问题。</p>
+<ol>
+<li><p>不同表数据模型对 sink 的效率影响有限。</p>
+</li>
+<li><p>flink2doris 性能瓶颈在 sink 端。单条数据 100 bytes 左右，flink2doris 的整体吞吐在 20w/s，单个 slot 在 6~8w/s。单条数据大小增加到 1257 bytes，flink2doris 的整体吞吐在 6w/s，单个 slot 在 2w/s。主要原因是随着数据大小的增加，sink 端很快到达阈值，单次stream load 的处理量降低，sink 端的处理速度降低反压到 source 端，从而导致整体的吞吐量降低。</p>
+</li>
+<li><p>整体任务的吞吐随着 slot 数的增加线性增长，kafka 测拉回来的数据大小不变的话，与 TM 内存关系不大。</p>
+</li>
+<li><p>随着 Doris 数据摄入吞吐量的提高，cpu 使用会明显上升。以 3 个 slot 启动三个大测试任务，cpu 平均使用在 5%。增加到 6 个 slot，cpu平均使用 15%。</p>
+</li>
+<li><p>随着 flink 任务吞吐量以及数据处理大小的提高，flink2doris 开始出现稳定性问题，主要表现为 stream load 失败，看 BE log 的话，怀疑是导入速度比较块，需要合并的版本比较多， fragment_mgr一直占用 tablet 锁， 进而导致 tablet writer 写 RPC 超时。以 IMP 业务数据 doris 摄入为例，吞吐超过 6w/s 后，就会频发  <code>index channel has intoleralbe failure </code> 错，进而导致 flink 任务不断失败重启，延迟越来越高。</p>
+</li>
+<li><p>exactly-once 不适用于处理流量数据以及需要频繁回溯的数据。</p>
+</li>
+<li><p>stram load 在 columns mapping  中引入表达式时，强依赖与 json 字段的顺序，否则会出现映射错误。</p>
+</li>
+</ol>
+
+        <h3 id="RoutineLoad-和-flink-doris-connector-对比"   >
+          <a href="#RoutineLoad-和-flink-doris-connector-对比" class="heading-link"><i class="fas fa-link"></i></a>RoutineLoad 和 flink-doris-connector 对比</h3>
+      <div class="table-container"><table>
+<thead>
+<tr>
+<th></th>
+<th>RoutineLoad</th>
+<th>flink-doris-connector</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>稳定性</td>
+<td>任务稳定运行。摄入与存储耦合。消耗 doris 集群本身资源，任务多了 cpu 使用会明显上升，可能会影响查询。</td>
+<td>任务稳定运行，摄入与存储分离。（对于需要频繁更新的大宽表，吞吐量提升到一定后，摄入稳定性会有问题，此时需要调整集群参数。）</td>
+</tr>
+<tr>
+<td>可维护性</td>
+<td>基于 doris 本身的 DML 进行管理，和客户端交互。问题查找涉及 BE，FE log 和 任务本身的错误链接提示，需要对 doris 摄入原理有一定的认识。</td>
+<td>基于 flink 配置化管理。问题查找可以查看 flink 日志，但是对于 stream load 摄入错误，也要结合 FE，BE log。</td>
+</tr>
+<tr>
+<td>可伸缩性</td>
+<td>基于以下逻辑控制并发，涉及任务参数以及 BE 参数，需要提前做预估，否则可能需要修改配置和启停集群。Min(partition num, desired_concurrent_number, alive_backend_num, Config.max_routine_load_task_concurrrent_num)</td>
+<td>基于 flink 调整并发，只会涉及到任务启停。</td>
+</tr>
+<tr>
+<td>数据摄入效率</td>
+<td>高</td>
+<td>较高（但是某些情况下会比 routinload 吞吐低 40% 左右)</td>
+</tr>
+<tr>
+<td>数据回溯支持</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>数据格式支持</td>
+<td>json/csv，对于需要的数据嵌套在不同的 json key 下无法处理。</td>
+<td>所有</td>
+</tr>
+<tr>
+<td>ETL 操作的支持</td>
+<td>columns 参数暴露，但是强依赖与上游数据源中的字段顺序保证，routineload 本身无法做到。</td>
+<td>columns 参数暴露，flink 层逻辑处理。</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table></div>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/a521d11e/">https://timemachine.icu/posts/a521d11e/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/Doris/">Doris</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/StarRocks/">StarRocks</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/b6b0cbc6/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">未知的征程</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/291450/"><span class="paginator-prev__text">之前的一些学习目标和计划</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95"><span class="toc-number">2.</span> <span class="toc-text">
+          性能测试</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#duplicate-%E8%A1%A8"><span class="toc-number">2.1.</span> <span class="toc-text">
+          duplicate 表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#agg-%E8%A1%A8"><span class="toc-number">2.2.</span> <span class="toc-text">
+          agg 表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#uniq-%E8%A1%A8"><span class="toc-number">2.3.</span> <span class="toc-text">
+          uniq 表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#exactly-once-%E6%B5%8B%E8%AF%95"><span class="toc-number">2.4.</span> <span class="toc-text">
+          exactly-once 测试</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#flink2doris-csv%EF%BC%8Cjson-%E6%A0%BC%E5%BC%8F%E5%AF%BC%E5%85%A5%E5%8F%8A-RoutineLoad-%E5%AF%B9%E6%AF%94"><span class="toc-number">2.5.</span> <span class="toc-text">
+          flink2doris csv，json 格式导入及 RoutineLoad 对比</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E5%8F%82%E6%95%B0%E8%B0%83%E6%95%B4%E6%B5%8B%E8%AF%95"><span class="toc-number">2.6.</span> <span class="toc-text">
+          集群参数调整测试</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E4%B8%80%E4%BA%9B%E6%B5%8B%E8%AF%95%E9%97%AE%E9%A2%98"><span class="toc-number">3.</span> <span class="toc-text">
+          遇到的一些测试问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E8%AE%BA"><span class="toc-number">4.</span> <span class="toc-text">
+          测试结论</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RoutineLoad-%E5%92%8C-flink-doris-connector-%E5%AF%B9%E6%AF%94"><span class="toc-number">5.</span> <span class="toc-text">
+          RoutineLoad 和 flink-doris-connector 对比</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/a521d11e/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/a521d11e/';
+        this.page.identifier = 'posts/a521d11e/';
+        this.page.title = 'doris实时数据摄入测试';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>

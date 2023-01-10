@@ -1,0 +1,701 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/assets/jiqiren-16x16.svg?v=2.2.0" type="image/png" sizes="16x16"><link rel="icon" href="/assets/jiqiren-32x32.svg?v=2.2.0" type="image/png" sizes="32x32"><meta name="google-site-verification" content="M2gL0pLr2EQ5KizTL6JmrykJMDnmpUn-Ip2WjYEDOso"><meta name="baidu-site-verification" content="code-XBmDG5fVMm"><meta name="description" content="前言2021 年下半年主要做的是 IMP 实时&#x2F;离线数据流的摄入以及涉及的各种 BI 报表工作。IMP 即内部营销平台，也可以叫作端内广告投放，作为最前置的业务，IMP 整个链路横跨广告投放、策略分流、落地页、微信导流、短信&#x2F;PUSH、成单等多个垂直业务单元。随着业务需求的频繁迭代，之前构建的业务数仓暴露出来越来越多的问题，表、字段的命名不统一，同一业务不同表之间的逻辑耦合，相同指标不同口径实现的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OneData探索">
+<meta property="og:url" content="https://timemachine.icu/posts/918e25c9/index.html">
+<meta property="og:site_name" content="TimeMachine Notes">
+<meta property="og:description" content="前言2021 年下半年主要做的是 IMP 实时&#x2F;离线数据流的摄入以及涉及的各种 BI 报表工作。IMP 即内部营销平台，也可以叫作端内广告投放，作为最前置的业务，IMP 整个链路横跨广告投放、策略分流、落地页、微信导流、短信&#x2F;PUSH、成单等多个垂直业务单元。随着业务需求的频繁迭代，之前构建的业务数仓暴露出来越来越多的问题，表、字段的命名不统一，同一业务不同表之间的逻辑耦合，相同指标不同口径实现的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/ali_oneData.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/OneData%20%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84%20%281%29.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/%E5%88%86%E5%B1%82.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/shucangliuxiang.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/zongxianjuzhen.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mingquezhibiao.png">
+<meta property="og:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/zhengtisheji.png">
+<meta property="article:published_time" content="2022-03-25T03:29:45.000Z">
+<meta property="article:modified_time" content="2023-01-10T14:41:06.120Z">
+<meta property="article:author" content="时光机">
+<meta property="article:tag" content="OneData">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/ali_oneData.png"><title>OneData探索 | TimeMachine Notes</title><link ref="canonical" href="https://timemachine.icu/posts/918e25c9/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.2.0"><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" data-ad-client="ca-pub-5142893863765774" async="" data-pjax=""></script><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: ["google","bing","baidu"],
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":false},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: {"avoidBanner":false},
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.1.1"><link rel="alternate" href="/atom.xml" title="TimeMachine Notes" type="application/atom+xml">
+</head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/book/"><span class="header-nav-menu-item__icon"><i class="fas fa-book"></i></span><span class="header-nav-menu-item__text">书籍</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/gallery/"><span class="header-nav-menu-item__icon"><i class="fas fa-image"></i></span><span class="header-nav-menu-item__text">相册</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="https://timemachine.icu/flink_learning_notes"><span class="header-nav-menu-item__icon"><i class="fas fa-sticky-note"></i></span><span class="header-nav-menu-item__text">笔记</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">TimeMachine Notes</div><div class="header-banner-info__subtitle">愿一直遇到有趣的人和事</div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">OneData探索</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-03-25</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-01-10</span></span><span class="post-meta-item post-meta-item--wordcount"><span class="post-meta-item__icon"><i class="far fa-file-word"></i></span><span class="post-meta-item__info">字数统计</span><span class="post-meta-item__value">4k</span></span><span class="post-meta-item post-meta-item--readtime"><span class="post-meta-item__icon"><i class="far fa-clock"></i></span><span class="post-meta-item__info">阅读时长</span><span class="post-meta-item__value">20分</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h3 id="前言"   >
+          <a href="#前言" class="heading-link"><i class="fas fa-link"></i></a>前言</h3>
+      <p>2021 年下半年主要做的是 IMP 实时/离线数据流的摄入以及涉及的各种 BI 报表工作。IMP 即内部营销平台，也可以叫作端内广告投放，作为最前置的业务，IMP 整个链路横跨广告投放、策略分流、落地页、微信导流、短信/PUSH、成单等多个垂直业务单元。随着业务需求的频繁迭代，之前构建的业务数仓暴露出来越来越多的问题，表、字段的命名不统一，同一业务不同表之间的逻辑耦合，相同指标不同口径实现的来回对数也对数据研发侧造成了很大困扰，由此本身产出的数据指标的置信性也开始受到挑战。</p>
+<p>基于以上问题，2022 年开始做了一些离线业务数仓方向上的调研以及落地规划。目标是在支撑业务快速迭代开发的前提下，统一化字段业务口径，规范化离线数据开发，降低离线表的存储资源，去除逻辑的冗余开发，提高离线 ETL 的开发效率。</p>
+<p>本文主要介绍个人基于 OneData 的一些看法，并举一些例子。</p>
+<a id="more"></a>
+
+
+        <h3 id="什么是-onedata"   >
+          <a href="#什么是-onedata" class="heading-link"><i class="fas fa-link"></i></a>什么是 onedata</h3>
+      <p>官方的解释是：阿里云 OneData 数据中台解决方案基于大数据存储和计算平台为载体，以 OneModel 统一数据构建及管理方法论为主干，OneID 核心商业要素资产化为核心，实现全域链接、标签萃取、立体画像，以数据资产管理为皮，数据应用服务为枝叶的松耦性整体解决方案。其数据服务理念根植于心，强调业务模式，在推进数字化转型中实现价值。具体如图所示：</p>
+<p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/ali_oneData.png"></p>
+<p>可以理解为 oneData 就是提供规范定义和开发标准，借助工具或者文档实现维度和指标的统一管理，在此基础上进行标准建模，对内对外提供统一的基础数据层，以期实现相同数据加工一次即可用的目的。</p>
+
+        <h3 id="oneData-体系架构"   >
+          <a href="#oneData-体系架构" class="heading-link"><i class="fas fa-link"></i></a>oneData 体系架构</h3>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/OneData%20%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84%20%281%29.png"></p>
+<p>说是 oneData 的体系架构，更多是一种抽象出数据体系组成的方法，是实现 oneData 之路的第一步，一般分为以下三个步骤。</p>
+<ol>
+<li>业务板块划分：根据业务属性，将业务划分出几个相对独立的板块，使业务板块之间的指标或业务重叠性较小。</li>
+<li>规范定义：结合行业的数据仓库建设经验和数据自身特点，设计出的一套数据规范命名体系，规范定义将会被用在模型设计中。</li>
+<li>模型设计：以维度建模理论为基础，基于维度建模总线架构，构建一致性的维度和事实（进行规范定义），同时，在落地表模型时，基于自身业务特点，设计一套规范命名体系。</li>
+</ol>
+<p>在规范定义阶段会涉及到以下一些基础概念：</p>
+<ul>
+<li><p>数据域：也叫主题域，指面向业务分析，将业务过程或者维度进行抽象的集合。数据域是需要抽象提炼，并且长期维护和更新的，但不轻易变动。在划分数据域时，既能涵盖当前所有的业务需求，又能在新业务进入时无影响的包含进已有的数据域中和拓展新的数据域。数据域的概念是为了更好划分管理数仓，类似文件夹中的子文件夹的概念，如果没有数据域的概念，一个数仓下上千张表的划分和管理是也是比较困难的。</p>
+</li>
+<li><p>业务过程：指企业的业务活动事件，如广告位的请求，曝光，可见曝光，点击都是业务过程。需要注意业务过程是一个不可拆分的行为事件。</p>
+</li>
+<li><p>维度：维度是度量的环境，用来反映业务的一类属性。这类属性的集合构成一个维度，也可以称为实体对象。维度属于一个数据域，如时间维度（年/月/日等），用户维度（年级、性别等）。</p>
+</li>
+<li><p>维度属性：维度属性隶属于一个维度，如用户维度里的年级，性别都是独立的维度属性。</p>
+</li>
+<li><p>原子指标/度量：原子指标和度量含义相同，都是基于某一业务事件行为下的度量，是业务定义中不可在拆分的指标，如落地页曝光等。</p>
+</li>
+<li><p>修饰类型：是对修饰词的一种抽象划分，从属与某个业务域，如课程维下的课程学科等。与维度的划分有点类似。</p>
+</li>
+<li><p>修饰词：指除了统计维度以外指标的业务场景限定抽象。</p>
+</li>
+<li><p>时间周期：用来明确数据统计的时间范围和时间点，如最近一小时等。</p>
+</li>
+<li><p>派生指标：派生指标=时间周期+修饰词+原子指标。派生指标是有实际业务含义，可以直接取数据的指标，通过限定指标的组成要素来唯一精确定义每个指标。当维度，原子指标，时间周期/修饰词都确定的时候就可以唯一确定一个派生指标，同时给出具体数值。如最近一小时内 365 资源位的点击次数。</p>
+</li>
+</ul>
+<p>在理解了上述概念之后，就可以根据业务需求调研的结果抽象出每个数据域下的层次结构，制定一些规范（一般包括字段命名规范，模型命名规范，数据流向规范），并以此规范进行后续数据模型的设计和优劣与否的判断标准。</p>
+
+        <h3 id="规范定义"   >
+          <a href="#规范定义" class="heading-link"><i class="fas fa-link"></i></a>规范定义</h3>
+      
+        <h4 id="字段命名规范"   >
+          <a href="#字段命名规范" class="heading-link"><i class="fas fa-link"></i></a>字段命名规范</h4>
+      <p>主要是词根表的建立，个人理解为词根是描述一件事物的最小单词，通过建立基础词根表，以不同词根的组合作为某个业务字段的命名来保证字段名称的规范和统一性。这里的词根也包含专业名词。</p>
+<p>示例：</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>词根</th>
+<th>含义</th>
+<th>简写</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>advert</td>
+<td>广告</td>
+<td>ad</td>
+</tr>
+<tr>
+<td>postition</td>
+<td>位置</td>
+<td>pos</td>
+</tr>
+<tr>
+<td>id</td>
+<td>id</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p>广告位 id 就可以命名为 adpos_id。</p>
+
+        <h4 id="指标定义规范"   >
+          <a href="#指标定义规范" class="heading-link"><i class="fas fa-link"></i></a>指标定义规范</h4>
+      <p>指标一般分为原子指标和派生指标。指标命名可以基于以上的字段的命名规范由不同词根组合而来。指标定义规范一般包含命名，口径，类型（sum 还是 count distinct ），从属的业务过程，以上三点在加上时间周期和修饰词就构建成了派生指标。在 BI 层通常还会配置复合指标，比如 ctr/cvr 等。</p>
+
+        <h4 id="模型设计规范"   >
+          <a href="#模型设计规范" class="heading-link"><i class="fas fa-link"></i></a>模型设计规范</h4>
+      <p>模型分层<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/%E5%88%86%E5%B1%82.png" width="60%" height="50%"></p>
+<ul>
+<li>ODS：原始数据层，存放原始数据，数据保持原貌不做处理。</li>
+<li>DW ：数据仓库层，是为企业所有级别的决策制定过程，提供所有类型数据支持的战略集合，是一个包含所有主题的通用集合。包含 DWD、DWS。</li>
+<li>DWD：明细数据层，存储的都是以事实表为主，该层的事实表又叫明细事实表。DWD 层做数据的标准化，为后续的处理提供干净、统一、标准的数据。在 DWD 层的操作：<ul>
+<li>过滤，去除掉丢失关键信息的数据、去除格式错误的数据、去除无用字段。</li>
+<li>统一，打点数据不够规范，不同业务的打点逻辑可能不同，在 DWD 层做统一。如布尔类型，有用 0，1 数字标识，也有用 0，1 字符串标识，也有用 true，false 字符串标识别。如字符串空值有 “”,也有 null。如日期有秒级时间戳，也有毫秒时间戳。</li>
+<li>映射，例如将字符串映射成枚举值。</li>
+<li>按照数据域划分。</li>
+</ul>
+</li>
+<li>DWS：数据服务层，按照业务划分，在该层按照不同的维度聚合计算指标，生成字段比较多的宽表，用于提供后续的业务查询，OLAP分析，数据分发等。</li>
+<li>DIM：维表层，存储所有的维度信息。按照不同的维度主题划分。</li>
+<li>ADS：数据应用层，面向实际的数据需求，以 DWD 或者 DWS 层的数据为基础，组成的各种统计报表。</li>
+</ul>
+<p>数据流向规范<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/shucangliuxiang.png" width="60%" height="50%"></p>
+<ul>
+<li>只有 dwd 和 dim 可以使用 ods 层数据。</li>
+<li>dwd 之间不能同层调用，原因是不能跨数据域调用。</li>
+<li>dws 之间可以互相调用，组合成不同数据域下的链路转化宽表。</li>
+<li>dim 从 dwd 事实表中获取或者从 ods 层直接获取，不能直接将 ods 层表作为 dim 使用。</li>
+<li>ads 层只能通过 dwd 和 dws 取数，并且要尽量避免直接从 dwd 取数，如果要取数的话，需要考虑是否可以建立 dws 宽表。</li>
+<li>对于其他业务团队提供的 dwd 表，首先考虑建立 dws 表，再者同步成业务交集下的 dwd 事实表。</li>
+</ul>
+
+        <h4 id="模型命名规范"   >
+          <a href="#模型命名规范" class="heading-link"><i class="fas fa-link"></i></a>模型命名规范</h4>
+      <p>模型分层 + 业务板块 + 数据主题 + {可选的业务过程} + {可选的粒度} +  调度周期，比如 dwd_imp_ad_click_di</p>
+
+        <h4 id="表文档规范"   >
+          <a href="#表文档规范" class="heading-link"><i class="fas fa-link"></i></a>表文档规范</h4>
+      <p>在平台基建不完善时，可以考虑结合 confluence 来对表文档进行集中管理，但是比较麻烦，这里不太建议。个人感觉的 oneData 各种规范的保证其实是强依赖于平台工具的，比如阿里的 dataworks。</p>
+
+        <h4 id="模型设计"   >
+          <a href="#模型设计" class="heading-link"><i class="fas fa-link"></i></a>模型设计</h4>
+      <p>主要基于维度建模的思想来进行模型设计，主要考虑以下几个因素</p>
+<ul>
+<li>易用性，大多数数仓表不仅仅要提供给上下游研发使用，分析师和运营也有取数需求，表模型的设计要尽量便于他人理解。</li>
+<li>拓展性，由于业务迭代添加字段时不用对下游业务使用造成太大的扰动。</li>
+<li>低成本，合理的字段冗余可以提高 sql 的性能，避免多余的 join 操作。这里的低成本并非是简单的低存储，更多是存储成本和查询性能的平衡。</li>
+<li>高效性，良好的查询性能，通常依赖于合理的分区和索引来实现，存储方面的话就是数据的分布。</li>
+</ul>
+
+        <h3 id="实施过程"   >
+          <a href="#实施过程" class="heading-link"><i class="fas fa-link"></i></a>实施过程</h3>
+      <p>阿里巴巴大数据之路第五章有对应的图，这里就不重新搞了，这里实施过程其实可以在抽象下，下面实践会介绍并举一些示例。</p>
+<ol>
+<li>业务需求调研。</li>
+<li>依据 oneData 的体系架构进行数据域划分，抽象业务过程和维度。</li>
+<li>明确规范定义<ul>
+<li>指标规范（指标分层，是否要借助工具或者文档来进行指标的统一建立与管理）。</li>
+<li>命名规范（字段命名规范，词根表，维度修饰词文档的维护）。</li>
+<li>模型设计规范（模型分层，模型命名，数据流向等）</li>
+<li>码值维护。</li>
+</ul>
+</li>
+<li>构建总线矩阵，以全局整体的视角来看每个业务过程所涉及到的维度。</li>
+<li>模型设计<ul>
+<li>依据第二步抽象的维度和指标进行维表和事实表设计。</li>
+<li>模型评审，保障交付。</li>
+</ul>
+</li>
+</ol>
+
+        <h3 id="一些问题"   >
+          <a href="#一些问题" class="heading-link"><i class="fas fa-link"></i></a>一些问题</h3>
+      <p>之前看 oneData 时的一些问题，其实应该也不算问题，oneData 作为一个方法论，只是起到总纲的作用，不能教条主义，要结合本身的业务场景来灵活调整，最终形成适合自己的 onedata。</p>
+<ul>
+<li>维度属性和修饰词的区别在哪里？既然已经作为修饰词了，那么就可以作为维度，为何还要区分成两个概念？</li>
+<li>汇总表和事实表的区别在哪里？<br>只有汇总表会涉及到指标的概念，事实表仅仅是描述事件行为。</li>
+<li>构建总线矩阵的意义在哪里？</li>
+<li>oneData 的核心思想是什么？</li>
+<li>维表有没有必要进行合并，什么场景下合并？<br>要理解主从维表的概念</li>
+<li>ods 的维表为啥要同步到 dim 一份，仅仅是为了统一规范？</li>
+<li>粒度和维度的区别在哪里？<br>粒度更偏向于描述事实的深度，比如小时粒度，天粒度，月粒度。而维度是描述事实的角度，更水平也更细。</li>
+<li>针对前置业务板块用到了后续转化链路业务下的数据域中的表，是需要把后续链路业务板块划作一个数据域放到前置业务中去，还是做完全的业务隔离呢？</li>
+<li>主题域和数据域的区别在哪里？</li>
+<li>业务过程该怎么划分，要不要拆分到最细？这里分别对应的就是单事务事实表和多事务事实表。什么场景下该拆分到最细，什么场景下又该合并？</li>
+<li>dwd，dws 层原则上不允许跨数据域，如果要跨数据域该怎么办？是新建数据域还是通过视图的方式提供？</li>
+<li>oneDtata 整体的实施过程强依赖工具，尤其是规范定义部分，如果没有工具功能保证的话，不可避免的会出现规范定义问题，最常见的就是字段命名不统一。</li>
+</ul>
+
+        <h3 id="实践"   >
+          <a href="#实践" class="heading-link"><i class="fas fa-link"></i></a>实践</h3>
+      <p>看了 oneData 一段时间后，其实非常的晦涩难懂，总感觉是虚无缥缈，另外这个东西的设计与重构的周期是非常长的，并且还要考虑中间业务需求的变动造成的已确定表模型的更改以及双跑过程中的队列资源。基于以上问题，对以上 oneData 的实施过程在做细分。</p>
+<p>下面的内容都会基于广告投放下的广告请求业务过程来做举例。</p>
+
+        <h4 id="数据域及业务过程划分"   >
+          <a href="#数据域及业务过程划分" class="heading-link"><i class="fas fa-link"></i></a>数据域及业务过程划分</h4>
+      <p>上面已经介绍了数据域及业务过程的概念。对于涉及对个垂直业务单元的业务线来说，其涉及到的每个业务单元可以看做一个数据域，比如博主所做的 IMP ，就可以划分为广告投放，落地页，成单等等数据域。<br>这里以广告投放数据域为例，业务过程大致可以划分为内部与外部</p>
+<ul>
+<li>内部，运营侧在后台对广告计划，单元，创意的创建。</li>
+<li>外部，用户产生的广告请求，广告曝光，广告可见曝光，广告点击。</li>
+</ul>
+
+        <h4 id="数仓规划"   >
+          <a href="#数仓规划" class="heading-link"><i class="fas fa-link"></i></a>数仓规划</h4>
+      
+        <h5 id="构建总线矩阵"   >
+          <a href="#构建总线矩阵" class="heading-link"><i class="fas fa-link"></i></a>构建总线矩阵</h5>
+      <p>主要是明确该数据域下所涉及到的所有业务过程以及每个业务过程所涉及到的维度<br><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/zongxianjuzhen.png"></p>
+
+        <h5 id="明确指标"   >
+          <a href="#明确指标" class="heading-link"><i class="fas fa-link"></i></a>明确指标</h5>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/mingquezhibiao.png"></p>
+
+        <h5 id="整体设计"   >
+          <a href="#整体设计" class="heading-link"><i class="fas fa-link"></i></a>整体设计</h5>
+      <p><img src="https://timemachine-blog.oss-cn-beijing.aliyuncs.com/img/zhengtisheji.png"></p>
+
+        <h4 id="数据标准"   >
+          <a href="#数据标准" class="heading-link"><i class="fas fa-link"></i></a>数据标准</h4>
+      
+        <h5 id="定义字段标准"   >
+          <a href="#定义字段标准" class="heading-link"><i class="fas fa-link"></i></a>定义字段标准</h5>
+      <p>根据规范定义中的词根表来设计该数据域下每个业务过程所涉及到的字段以及业务含义。</p>
+
+        <h5 id="定义枚举值"   >
+          <a href="#定义枚举值" class="heading-link"><i class="fas fa-link"></i></a>定义枚举值</h5>
+      <p>针对字段标准中字段，关联其对应的枚举值</p>
+
+        <h5 id="定义度量"   >
+          <a href="#定义度量" class="heading-link"><i class="fas fa-link"></i></a>定义度量</h5>
+      
+        <h4 id="数据指标"   >
+          <a href="#数据指标" class="heading-link"><i class="fas fa-link"></i></a>数据指标</h4>
+      
+        <h5 id="定义原子指标"   >
+          <a href="#定义原子指标" class="heading-link"><i class="fas fa-link"></i></a>定义原子指标</h5>
+      
+        <h5 id="定义修饰词"   >
+          <a href="#定义修饰词" class="heading-link"><i class="fas fa-link"></i></a>定义修饰词</h5>
+      
+        <h5 id="定义时间周期"   >
+          <a href="#定义时间周期" class="heading-link"><i class="fas fa-link"></i></a>定义时间周期</h5>
+      
+        <h5 id="构建派生指标"   >
+          <a href="#构建派生指标" class="heading-link"><i class="fas fa-link"></i></a>构建派生指标</h5>
+      
+        <h4 id="模型设计-1"   >
+          <a href="#模型设计-1" class="heading-link"><i class="fas fa-link"></i></a>模型设计</h4>
+      
+        <h3 id="总结"   >
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a>总结</h3>
+      <p>OneData 仅仅是一个思想，或者说是一种做事的通用方法。我们不应囿于这个个概念，而是应该结合具体的业务场景去思考如何落地，在实践中归纳出适合自己业务的 ‘OneData’。这里其实我把它归纳成了五步，然后没一步都需要详细的业务调研和评审环节，甚至工具来保证其强规范性</p>
+<ul>
+<li>数据域及业务过程划分</li>
+<li>数仓规划</li>
+<li>数据标准 </li>
+<li>数据指标</li>
+<li>模型设计</li>
+<li>模型评审</li>
+<li>资源预估</li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="https://timemachine.icu">时光机</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="https://timemachine.icu/posts/918e25c9/">https://timemachine.icu/posts/918e25c9/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="https://timemachine.icu/tags/OneData/">OneData</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/posts/291450/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">之前的一些学习目标和计划</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/posts/d0259ab8/"><span class="paginator-prev__text">MR Job Counters 分析</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div><div class="comments" id="comments"><div id="disqus_thread"></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">
+          前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-onedata"><span class="toc-number">2.</span> <span class="toc-text">
+          什么是 onedata</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#oneData-%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">
+          oneData 体系架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%84%E8%8C%83%E5%AE%9A%E4%B9%89"><span class="toc-number">4.</span> <span class="toc-text">
+          规范定义</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AD%97%E6%AE%B5%E5%91%BD%E5%90%8D%E8%A7%84%E8%8C%83"><span class="toc-number">4.1.</span> <span class="toc-text">
+          字段命名规范</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E5%AE%9A%E4%B9%89%E8%A7%84%E8%8C%83"><span class="toc-number">4.2.</span> <span class="toc-text">
+          指标定义规范</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83"><span class="toc-number">4.3.</span> <span class="toc-text">
+          模型设计规范</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E5%91%BD%E5%90%8D%E8%A7%84%E8%8C%83"><span class="toc-number">4.4.</span> <span class="toc-text">
+          模型命名规范</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A1%A8%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83"><span class="toc-number">4.5.</span> <span class="toc-text">
+          表文档规范</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E8%AE%BE%E8%AE%A1"><span class="toc-number">4.6.</span> <span class="toc-text">
+          模型设计</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E6%96%BD%E8%BF%87%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">
+          实施过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98"><span class="toc-number">6.</span> <span class="toc-text">
+          一些问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E8%B7%B5"><span class="toc-number">7.</span> <span class="toc-text">
+          实践</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%9F%9F%E5%8F%8A%E4%B8%9A%E5%8A%A1%E8%BF%87%E7%A8%8B%E5%88%92%E5%88%86"><span class="toc-number">7.1.</span> <span class="toc-text">
+          数据域及业务过程划分</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E4%BB%93%E8%A7%84%E5%88%92"><span class="toc-number">7.2.</span> <span class="toc-text">
+          数仓规划</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E6%80%BB%E7%BA%BF%E7%9F%A9%E9%98%B5"><span class="toc-number">7.2.1.</span> <span class="toc-text">
+          构建总线矩阵</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%98%8E%E7%A1%AE%E6%8C%87%E6%A0%87"><span class="toc-number">7.2.2.</span> <span class="toc-text">
+          明确指标</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%95%B4%E4%BD%93%E8%AE%BE%E8%AE%A1"><span class="toc-number">7.2.3.</span> <span class="toc-text">
+          整体设计</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E6%A0%87%E5%87%86"><span class="toc-number">7.3.</span> <span class="toc-text">
+          数据标准</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E5%AD%97%E6%AE%B5%E6%A0%87%E5%87%86"><span class="toc-number">7.3.1.</span> <span class="toc-text">
+          定义字段标准</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E6%9E%9A%E4%B8%BE%E5%80%BC"><span class="toc-number">7.3.2.</span> <span class="toc-text">
+          定义枚举值</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E5%BA%A6%E9%87%8F"><span class="toc-number">7.3.3.</span> <span class="toc-text">
+          定义度量</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E6%8C%87%E6%A0%87"><span class="toc-number">7.4.</span> <span class="toc-text">
+          数据指标</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E5%8E%9F%E5%AD%90%E6%8C%87%E6%A0%87"><span class="toc-number">7.4.1.</span> <span class="toc-text">
+          定义原子指标</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E4%BF%AE%E9%A5%B0%E8%AF%8D"><span class="toc-number">7.4.2.</span> <span class="toc-text">
+          定义修饰词</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E6%97%B6%E9%97%B4%E5%91%A8%E6%9C%9F"><span class="toc-number">7.4.3.</span> <span class="toc-text">
+          定义时间周期</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E6%B4%BE%E7%94%9F%E6%8C%87%E6%A0%87"><span class="toc-number">7.4.4.</span> <span class="toc-text">
+          构建派生指标</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E8%AE%BE%E8%AE%A1-1"><span class="toc-number">7.5.</span> <span class="toc-text">
+          模型设计</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.</span> <span class="toc-text">
+          总结</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/assets/241601814382_.pic_hd.jpg" alt="avatar"></div><p class="sidebar-ov-author__text">焦而不燥，厚积薄发</p></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/Flyraty" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://www.zhihu.com/people/zhang-hai-liang-83-28" target="_blank" rel="noopener" data-popover="知乎" data-popover-pos="up"><span class="sidebar-ov-social-item__icon">知</span></a><a class="sidebar-ov-social-item" href="zhanghailiangabc139" target="_blank" rel="noopener" data-popover="微信" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weixin"></i></span></a><a class="sidebar-ov-social-item" href="1397554745" target="_blank" rel="noopener" data-popover="QQ" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-qq"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">94</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">11</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">35</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>时光机</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"><div class="search-btns">使用搜索：<span class="search-btns-item search-btns-item--google"><i class="fab fa-google"></i>谷歌</span><span class="search-btns-item search-btns-item--bing"><i></i>必应</span><span class="search-btns-item search-btns-item--baidu"><i></i>百度</span></div></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/ribbon.js@latest/dist/ribbon.min.js" size="120" alpha="0.6" zIndex="-1"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.xml';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/npm/pjax@latest/pjax.min.js"></script><script>window.addEventListener('DOMContentLoaded', function () {
+  var pjax = new Pjax({"selectors":["head title","#main",".pjax-reload"],"history":true,"scrollTo":false,"scrollRestoration":false,"cacheBust":false,"debug":false,"currentUrlFullReload":false,"timeout":0});
+  // 加载进度条的计时器
+  var loadingTimer = null;
+
+  // 重置页面 Y 方向上的滚动偏移量
+  document.addEventListener('pjax:send', function () {
+    $('.header-nav-menu').removeClass('show');
+    if (CONFIG.pjax && CONFIG.pjax.avoidBanner) {
+      $('html').velocity('scroll', {
+        duration: 500,
+        offset: $('#header').height(),
+        easing: 'easeInOutCubic'
+      });
+    }
+
+    var loadingBarWidth = 20;
+    var MAX_LOADING_WIDTH = 95;
+
+    $('.loading-bar').addClass('loading');
+    $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function () {
+      loadingBarWidth += 3;
+      if (loadingBarWidth > MAX_LOADING_WIDTH) {
+        loadingBarWidth = MAX_LOADING_WIDTH;
+      }
+      $('.loading-bar__progress').css('width', loadingBarWidth + '%');
+    }, 500);
+  }, false);
+
+  window.addEventListener('pjax:complete', function () {
+    clearInterval(loadingTimer);
+    $('.loading-bar__progress').css('width', '100%');
+    $('.loading-bar').removeClass('loading');
+    setTimeout(function () {
+      $('.loading-bar__progress').css('width', '0');
+    }, 400);
+    $('link[rel=prefetch], script[data-pjax-rm]').each(function () {
+      $(this).remove();
+    });
+    $('script[data-pjax], #pjax-reload script').each(function () {
+      $(this).parent().append($(this).remove());
+    });
+
+    if (Stun.utils.pjaxReloadBoot) {
+      Stun.utils.pjaxReloadBoot();
+    }
+    if (Stun.utils.pjaxReloadScroll) {
+      Stun.utils.pjaxReloadScroll();
+    }
+    if (Stun.utils.pjaxReloadSidebar) {
+      Stun.utils.pjaxReloadSidebar();
+    }
+    if (false) {
+      if (Stun.utils.pjaxReloadHeader) {
+        Stun.utils.pjaxReloadHeader();
+      }
+      if (Stun.utils.pjaxReloadScrollIcon) {
+        Stun.utils.pjaxReloadScrollIcon();
+      }
+      if (Stun.utils.pjaxReloadLocalSearch) {
+        Stun.utils.pjaxReloadLocalSearch();
+      }
+    }
+  }, false);
+}, false);</script><div id="pjax-reload"><script src="https://cdn.jsdelivr.net/npm/quicklink@1.0.1/dist/quicklink.umd.js"></script><script>function initQuicklink() {
+  quicklink({
+    timeout: '10000',
+    priority: true,
+    ignores: [uri => uri.includes('#'), uri => uri === 'https://timemachine.icu/posts/918e25c9/', /\/api\/?/,uri => uri.includes('.xml'),uri => uri.includes('.zip'),(uri, el) => el.hasAttribute('nofollow'),(uri, el) => el.hasAttribute('noprefetch')]
+  });
+}
+
+if (true || false) {
+  initQuicklink();
+} else {
+  window.addEventListener('DOMContentLoaded', initQuicklink, false);
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script></div><script data-pjax="">function loadDisqus () {
+  if (!document.getElementById('disqus_thread')) {
+    return;
+  }
+  if (window.DISQUS) {
+    DISQUS.reset({
+      reload: true,
+      config: function () {
+        this.page.url = 'https://timemachine.icu/posts/918e25c9/';
+        this.page.identifier = 'posts/918e25c9/';
+        this.page.title = 'OneData探索';
+      }
+    });
+  } else {
+    var d = document;
+    var sc = d.createElement('script');
+    var se = d.createElement('script');
+
+    if (true) {
+      sc.src = 'https://flyraty.disqus.com/count.js';
+      sc.id = 'dsq-count-scr';
+      sc.async = true;
+      if (true) {
+        sc.setAttribute('data-pjax', '');
+      }
+      (d.head || d.body).appendChild(sc);
+    }
+    se.src = 'https://flyraty.disqus.com/embed.js';
+    (d.head || d.body).appendChild(se);
+  }
+}
+
+if (true) {
+  loadDisqus();
+} else {
+  window.addEventListener('DOMContentLoaded', loadDisqus, false);
+}</script><script src="/js/utils.js?v=2.2.0"></script><script src="/js/stun-boot.js?v=2.2.0"></script><script src="/js/scroll.js?v=2.2.0"></script><script src="/js/header.js?v=2.2.0"></script><script src="/js/sidebar.js?v=2.2.0"></script><script type="application/json" src="/search.xml"></script></body></html>
